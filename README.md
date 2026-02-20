@@ -1,16 +1,39 @@
-# React + Vite
+# 🎬 Shakzz Play - The Ultimate Entertainment System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Welcome to **Shakzz Play**! A hybrid, all-in-one streaming application built to seamlessly integrate Hollywood movies, global TV series, precise Anime tracking, and Live TV into a single, beautiful, native-feeling mobile and web experience.
 
-Currently, two official plugins are available:
+**"DIVE INTO THE SYSTEM."**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## ✨ Key Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* **🍿 Massive VOD Library:** Stream trending Movies, top K-Dramas, C-Dramas, and Filipino Series, powered by TMDB.
+* **🎌 Native Anime Integration:** Bypasses standard western API limits. Fetches accurate episode counts, synopses, and recommendations directly from **MyAnimeList (Jikan API)**.
+* **📡 Live TV Hub:** Watch local and international Live TV seamlessly. Channel lists are dynamically fetched securely via a Cloudflare Worker proxy.
+* **⚡ Multi-Source Playback:** Never get stuck buffering. Built-in server selection lets you swap between backup streaming APIs instantly.
+* **🛡️ Offline Protection Mode:** If your internet drops, a custom "Blast Door" UI safely locks the content view while keeping the navigation bars accessible, functioning just like a premium native app.
+* **💾 Cloud Sync:** Powered by Firebase to securely save your "Continue Watching" history, progress bars, and "Watchlist" across devices.
+* **📱 Mobile-Ready:** Built with React and structured for native mobile deployment using Ionic Capacitor.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Tech Stack
+
+* **Frontend:** React.js, Vite, HTML5, CSS3 (Custom UI/UX)
+* **Backend / Cloud:** Firebase (Authentication, Firestore Database)
+* **APIs:** * TMDB API (Movies & TV Shows)
+  * Autoembed / Vidsrc (Streaming Sources)
+* **Proxy / Security:** Cloudflare Workers (For Live TV M3U8/Manifest fetching)
+* **Mobile Wrap:** Capacitor (Screen Orientation, Status Bar, App locking)
+
+---
+
+## 🚀 How to Run Locally
+
+If you want to clone this repository and run it on your own machine, follow these steps:
+
+**1. Clone the repository:**
+```bash
+git clone [https://github.com/YOUR_GITHUB_USERNAME/Shakzz-Play.git](https://github.com/YOUR_GITHUB_USERNAME/Shakzz-Play.git)
+cd Shakzz-Play
