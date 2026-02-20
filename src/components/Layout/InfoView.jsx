@@ -37,7 +37,7 @@ const infoContent = {
                 <h3 class="update-title"> Beta Release</h3>
                 <span class="update-date">2026-02-20</span>
             </div>
-           <p class="update-content">Welcome to the official <strong>Beta Release</strong>! We've integrated a new hybrid Anime system for perfectly accurate seasons, added global offline protection, and built a multi-source server selector for flawless playback. Thank you for testing!</p>
+       <p class="update-content"><strong>System Initialization: Beta v1.0.</strong> Your ultimate entertainment platform is online. Watch your favorite dramas, series, anime, and Live TV in high quality. Equipped with multi-server backup links and offline safety protocols. Thank you for being a beta tester!</p>
         </div>
        <div class="update-item">
             <div class="update-header">
