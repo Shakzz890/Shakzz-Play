@@ -19,6 +19,7 @@
     "@capacitor/status-bar": "^8.0.1",
     "@capawesome/capacitor-app-update": "^6.1.0",
     "@capgo/capacitor-navigation-bar": "^8.0.20",
+    "@noriginmedia/norigin-spatial-navigation": "^2.3.0",
     "axios": "^1.13.2",
     "firebase": "^12.8.0",
     "react": "^19.2.0",
