@@ -23,7 +23,6 @@ Welcome to **Shakzz Play**! A hybrid, all-in-one streaming application built to 
 * **Frontend:** React.js, Vite, HTML5, CSS3 (Custom UI/UX)
 * **Backend / Cloud:** Firebase (Authentication, Firestore Database)
 * **APIs:** * TMDB API (Movies & TV Shows)
-  * Jikan API / MyAnimeList (Anime Data)
   * Autoembed / Vidsrc (Streaming Sources)
 * **Proxy / Security:** Cloudflare Workers (For Live TV M3U8/Manifest fetching)
 * **Mobile Wrap:** Capacitor (Screen Orientation, Status Bar, App locking)
