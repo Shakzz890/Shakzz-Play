@@ -1,0 +1,127 @@
+/* src/components/UpdateDialog.css */
+
+/* Full screen overlay with blur */
+.update-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* Ensure it's on top of everything */
+}
+
+/* The Modal Card */
+.update-card {
+  background: #1a1a1a; /* Dark theme background */
+  width: 90%;
+  max-width: 400px;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  border: 1px solid #333;
+  color: white;
+  text-align: center;
+}
+
+/* Animation */
+.fade-in-up {
+  animation: fadeInUp 0.3s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.update-header h2 {
+  margin: 10px 0 5px;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.update-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 10px;
+}
+
+/* Body Text */
+.version-text {
+  font-size: 1rem;
+  color: #ccc;
+  margin-bottom: 20px;
+}
+
+.current-text {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+/* Release Notes Box */
+.release-notes-container {
+  background: #252525;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: left;
+  margin-bottom: 24px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.release-notes-container h4 {
+  margin: 0 0 5px 0;
+  font-size: 0.9rem;
+  color: #4facfe;
+}
+
+.release-notes-container p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #ddd;
+  white-space: pre-wrap;
+}
+
+/* Buttons */
+.update-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-update, .btn-cancel {
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1rem;
+  flex: 1;
+  transition: transform 0.1s;
+}
+
+.btn-update {
+  background: linear-gradient(135deg, #00f260 0%, #0575e6 100%);
+  color: white;
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid #555;
+  color: #aaa;
+}
+
+.btn-update:active, .btn-cancel:active {
+  transform: scale(0.95);
+}

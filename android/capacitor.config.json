@@ -1,0 +1,8 @@
+{
+  "appId": "com.shakzz.play",
+  "appName": "Shakzz Play",
+  "webDir": "cs",
+  "server": {
+    "androidScheme": "https"
+  }
+}

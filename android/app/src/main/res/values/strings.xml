@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Shakzz Play</string>
+    <string name="title_activity_main">Shakzz Play</string>
+    <string name="package_name">com.shakzz.play</string>
+    <string name="custom_url_scheme">com.shakzz.play</string>
+    <string name="default_web_client_id">841207969238-2vm9tprh0euv50lpbgdneq3o34u69qch.apps.googleusercontent.com</string>
+</resources>

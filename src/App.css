@@ -1,0 +1,34 @@
+/* =========================================
+   SHAKZZ TV - APP ROOT LAYOUT
+   Most styles are in index.css
+   ========================================= */
+
+/* Ensure the React Root div takes up the full screen */
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: #0f0f0f; /* Matches your var(--bg-color) */
+  color: #f1f5f9;            /* Matches your var(--text-color) */
+}
+
+/* Prevent horizontal scroll on the main body */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Optional: Smooth fade-in for the whole app load */
+.app-container {
+  opacity: 0;
+  animation: appFadeIn 0.5s ease forwards;
+}
+
+@keyframes appFadeIn {
+  to {
+    opacity: 1;
+  }
+}

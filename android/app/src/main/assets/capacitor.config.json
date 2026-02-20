@@ -1,0 +1,27 @@
+{
+	"appId": "com.shakzz.play",
+	"appName": "Shakzz Play",
+	"bundledWebRuntime": false,
+	"npmClient": "npm",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https",
+		"cleartext": true,
+		"allowNavigation": [
+			"*"
+		]
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 0
+		},
+		"FirebaseAuthentication": {
+			"skipNativeAuth": false,
+			"providers": [
+				"google.com",
+				"github.com"
+			]
+		}
+	},
+	"cordova": {}
+}

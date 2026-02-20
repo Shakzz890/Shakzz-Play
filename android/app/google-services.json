@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "841207969238",
+    "firebase_url": "https://shakzztv-de597-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "shakzztv-de597",
+    "storage_bucket": "shakzztv-de597.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:841207969238:android:8c7438f905363296c5e077",
+        "android_client_info": {
+          "package_name": "com.shakzz.play"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "841207969238-5anfvp1vh0anevlf4bn1slfnvmbi5648.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.shakzz.play",
+            "certificate_hash": "9bbcf08d9ae55e6cbff428495001e2fda7851400"
+          }
+        },
+        {
+          "client_id": "841207969238-2vm9tprh0euv50lpbgdneq3o34u69qch.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDb_17bPeG5xvtUJzM1q8WhBDZ4xaArrq8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "841207969238-2vm9tprh0euv50lpbgdneq3o34u69qch.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
