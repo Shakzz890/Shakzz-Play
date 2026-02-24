@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useGlobal } from '../context/GlobalContext';
-import { channels, animeData } from '../api/channels'; 
-import { PLACEHOLDER_IMG } from '../api/tmdb';
+import { PLACEHOLDER_IMG } from '../api/tmdb'; 
 
 // --- IMPORTS FOR IMMERSIVE MODE ---
 import { ScreenOrientation } from '@capacitor/screen-orientation';
@@ -25,6 +24,11 @@ const TABS = [
 const Live = () => {
     const { currentView } = useGlobal();
 
+    // --- CLOUDFLARE DYNAMIC DATA STATES ---
+    const [channels, setChannels] = useState({});
+    const [animeData, setAnimeData] = useState({});
+    const [isDbLoading, setIsDbLoading] = useState(true);
+
     // --- STATE ---
     const [activeChannelKey, setActiveChannelKey] = useState(null);
     const [activeTab, setActiveTab] = useState(0); 
@@ -35,34 +39,21 @@ const Live = () => {
     // Data States
     const [onlineCount, setOnlineCount] = useState(null);
     const [currentTime, setCurrentTime] = useState(new Date()); 
-    const [isAnimeLoading, setIsAnimeLoading] = useState(false); // Added loading state
+    const [isAnimeLoading, setIsAnimeLoading] = useState(false); 
     
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [animeEpisodes, setAnimeEpisodes] = useState([]);
     const [selectedAnimeTitle, setSelectedAnimeTitle] = useState("");
 
-    // --- INITIAL SETUP ---
+    // --- INITIAL SETUP & CLOUDFLARE FETCH ---
     useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth <= 1023);
-        };
+        const handleResize = () => setIsMobile(window.innerWidth <= 1023);
         window.addEventListener('resize', handleResize);
         
         const storedFavs = JSON.parse(localStorage.getItem("favoriteChannels") || "[]");
         setFavorites(storedFavs);
 
-        const lastPlayed = localStorage.getItem("lastPlayedChannel");
-        let targetChannel = "";
-
-        if (lastPlayed && channels[lastPlayed]) {
-            targetChannel = lastPlayed;
-        } else {
-            targetChannel = channels['kapamilya'] ? 'kapamilya' : Object.keys(channels)[0];
-        }
-
-        const timeInterval = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 1000); 
+        const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000); 
 
         const updateCount = async () => {
             const uid = localStorage.getItem('visitor_uid') || Math.random().toString(36).substring(7);
@@ -78,17 +69,51 @@ const Live = () => {
         const countInterval = setInterval(updateCount, 5000);
         updateCount();
 
-        if (!window.jwplayer) {
-            const script = document.createElement('script');
-            script.src = "https://ssl.p.jwpcdn.com/player/v/8.38.10/jwplayer.js";
-            script.onload = () => {
-                window.jwplayer.key = "ITWMv7t88JGzI0xPwW8I0+LveiXX9SWbfdmt0ArUSyc=";
-                if(targetChannel) loadChannel(targetChannel);
-            };
-            document.head.appendChild(script);
-        } else {
-            if(targetChannel) loadChannel(targetChannel);
-        }
+        // === FETCH DATABASE FROM CLOUDFLARE ===
+        const initLiveTV = async () => {
+            try {
+                // Fetch full JSON DB from Worker fallback route
+                const dbRes = await fetch(SECURE_WORKER_URL);
+                if (!dbRes.ok) throw new Error("Failed to load Cloudflare DB");
+                
+                const dbData = await dbRes.json();
+                const remoteChannels = dbData.channels || {};
+                const remoteAnime = dbData.animeData || {};
+
+                // Update app state
+                setChannels(remoteChannels);
+                setAnimeData(remoteAnime);
+                setIsDbLoading(false);
+
+                // Figure out which channel to auto-play first
+                const lastPlayed = localStorage.getItem("lastPlayedChannel");
+                let targetChannel = "";
+                if (lastPlayed && remoteChannels[lastPlayed]) {
+                    targetChannel = lastPlayed;
+                } else {
+                    targetChannel = remoteChannels['kapamilya'] ? 'kapamilya' : Object.keys(remoteChannels)[0];
+                }
+
+                // Initialize Player using the freshly fetched remote data
+                if (!window.jwplayer) {
+                    const script = document.createElement('script');
+                    script.src = "https://ssl.p.jwpcdn.com/player/v/8.38.10/jwplayer.js";
+                    script.onload = () => {
+                        window.jwplayer.key = "ITWMv7t88JGzI0xPwW8I0+LveiXX9SWbfdmt0ArUSyc=";
+                        if(targetChannel) loadChannel(targetChannel, null, remoteChannels);
+                    };
+                    document.head.appendChild(script);
+                } else {
+                    if(targetChannel) loadChannel(targetChannel, null, remoteChannels);
+                }
+
+            } catch (err) {
+                console.error("DB Sync Error:", err);
+                setIsDbLoading(false);
+            }
+        };
+
+        initLiveTV();
 
         return () => {
             clearInterval(timeInterval);
@@ -113,15 +138,14 @@ const Live = () => {
         } catch(e) {}
     }, [currentView, activeChannelKey]);
 
-    // --- PLAYER LOGIC (Merged: Secure Fetch + Immersive Mode) ---
-    const loadChannel = async (key, customData = null) => {
-        const channelMeta = customData || channels[key];
+    // --- PLAYER LOGIC (Accepts custom remote DB on first boot) ---
+    const loadChannel = async (key, customData = null, dbRef = channels) => {
+        const channelMeta = customData || dbRef[key];
         if (!channelMeta) return;
 
         setActiveChannelKey(key || channelMeta.name);
         if(!customData) localStorage.setItem("lastPlayedChannel", key);
 
-        // 1. SECURE FETCH LOGIC
         let secureData = {};
         try {
             if (!customData) {
@@ -138,7 +162,6 @@ const Live = () => {
 
         const finalConfig = { ...channelMeta, ...secureData };
 
-        // 2. PLAYER SETUP LOGIC
         if (window.jwplayer) {
             const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJTaGFrenoiLCJleHAiOjE3NjY5NTgzNTN9.RSc_LQ11txXXI0d7gZ8GvMOAwoHrWzUUr3CCQCM0Hco";
             
@@ -166,6 +189,18 @@ const Live = () => {
                 };
             }
 
+            // 1. SHOW BANNER BEFORE SETUP
+            const loadingBanner = document.getElementById('stream-loading-banner');
+            if (loadingBanner) {
+                loadingBanner.style.opacity = '1';
+                loadingBanner.innerHTML = `
+                    <div class="spinner" style="margin: 0 0 15px 0 !important;"></div>
+                    <h3>SHAKZZ PLAY</h3>
+                    <p>Loading channel... please wait 3-5 seconds.</p>
+                `;
+            }
+
+            // 2. INITIALIZE PLAYER (Removed the background image property)
             const playerInstance = window.jwplayer("video").setup({
                 autostart: true,
                 width: "100%",
@@ -174,31 +209,54 @@ const Live = () => {
                 playlist: [{
                     file: finalManifest,
                     type: finalConfig.type === "mp4" ? "mp4" : (finalConfig.type === "hls" ? "hls" : "dash"),
-                    image: finalConfig.logo || PLACEHOLDER_IMG,
                     drm: drmConfig
                 }]
             });
 
-            // --- 3. IMMERSIVE MODE HANDLER ---
+            // 3. DYNAMIC BANNER EVENTS
+            playerInstance.on('play', () => {
+                if (loadingBanner) loadingBanner.style.opacity = '0'; // Hide when successfully playing
+            });
+
+            playerInstance.on('buffer', () => {
+                if (loadingBanner) {
+                    loadingBanner.style.opacity = '1';
+                    loadingBanner.innerHTML = `
+                        <div class="spinner" style="margin: 0 0 15px 0 !important;"></div>
+                        <h3>SHAKZZ PLAY</h3>
+                        <p>Buffering stream... please wait.</p>
+                    `;
+                }
+            });
+
+            playerInstance.on('error', () => {
+                if (loadingBanner) {
+                    loadingBanner.style.opacity = '1';
+                    loadingBanner.innerHTML = `
+                        <h3 style="color: #ef4444; text-shadow: 0 0 15px rgba(239, 68, 68, 0.4);">STREAM OFFLINE</h3>
+                        <p>Unable to load channel. Please try another one.</p>
+                    `;
+                }
+            });
+
             playerInstance.on('fullscreen', async (event) => {
                 if (event.fullscreen) {
                     try {
                         await ScreenOrientation.lock({ orientation: 'landscape' });
                         await StatusBar.hide();
                         await NavigationBar.hide();
-                    } catch (e) { console.error("Fullscreen Enter Error", e); }
+                    } catch (e) {}
                 } else {
                     try {
                         await ScreenOrientation.lock({ orientation: 'portrait' });
                         await StatusBar.show();
                         await NavigationBar.show();
-                    } catch (e) { console.error("Fullscreen Exit Error", e); }
+                    } catch (e) {}
                 }
             });
         }
     };
 
-    // --- ANIME HANDLER (Merged with Secure Fetch) ---
     const handleAnimeSelect = async (e) => {
         const title = e.target.value;
         setSelectedAnimeTitle(title);
@@ -271,16 +329,14 @@ const Live = () => {
     };
 
     const formatTabName = (tab) => {
-        return tab
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
+        return tab.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     };
 
     const filteredChannels = getFilteredList();
     const isAnimeTab = TABS[activeTab] === "anime tagalog dubbed";
+    const { dateStr, timeStr } = formatFullDateTime(currentTime);
 
-    const formatFullDateTime = (date) => {
+    function formatFullDateTime(date) {
         const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
         let hours = date.getHours();
         const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -289,9 +345,7 @@ const Live = () => {
         if (hours > 12) hours -= 12;
         if (hours === 0) hours = 12;
         return { dateStr, timeStr: `${hours}:${minutes}:${seconds} ${suffix}` };
-    };
-
-    const { dateStr, timeStr } = formatFullDateTime(currentTime);
+    }
 
     return (
         <div id="live-view" style={{ display: 'flex', position: 'relative' }}>
@@ -301,6 +355,10 @@ const Live = () => {
                     <div id="video">
                         <div className="skeleton" style={{width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, background: '#000'}}></div>
                     </div>
+
+                    {/* --- NEW CUSTOM LOADING BANNER --- */}
+                    <div id="stream-loading-banner" className="stream-loading-banner" style={{opacity: 0}}></div>
+
                     <div id="overlayContainer">
                         <div id="nowPlayingOverlay">
                             <span className="pulsing-dot"></span>
@@ -362,7 +420,7 @@ const Live = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <i className="fas fa-tv"></i>
                         <span>
-                            {isAnimeLoading ? "Loading..." : 
+                            {isDbLoading ? "Syncing..." : isAnimeLoading ? "Loading..." : 
                              isAnimeTab ? (selectedAnimeTitle ? `${animeEpisodes.length} Eps` : "Select Title") : 
                              `${filteredChannels.length} Channels`}
                         </span>
@@ -378,7 +436,14 @@ const Live = () => {
 
                 <div className="channel-list-wrapper">
                     <div className="channel-list">
-                        {!isAnimeTab && filteredChannels.map(([key, channel]) => (
+                        {isDbLoading && (
+                            <div style={{textAlign: 'center', color: '#666', padding: '40px'}}>
+                                <div className="spinner" style={{margin: '0 auto 15px auto'}}></div>
+                                Syncing Secure Data...
+                            </div>
+                        )}
+
+                        {!isDbLoading && !isAnimeTab && filteredChannels.map(([key, channel]) => (
                             <div 
                                 key={key} 
                                 className={`channel-button focusable-element ${activeChannelKey === key ? 'active' : ''}`}
@@ -396,7 +461,7 @@ const Live = () => {
                             </div>
                         ))}
 
-                        {isAnimeTab && animeEpisodes.map((ep, idx) => (
+                        {!isDbLoading && isAnimeTab && animeEpisodes.map((ep, idx) => (
                             <div 
                                 key={idx} 
                                 className={`channel-button focusable-element ${activeChannelKey === ep.name ? 'active' : ''}`}

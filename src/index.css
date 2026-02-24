@@ -2,11 +2,11 @@
    SHAKZZ TV - SHADOW MONARCH THEME (SOLO LEVELING EDITION)
    Consolidated & Maintainable Version - Device Agnostic Design
    GRID SYSTEM: Desktop 9 | Tablet 6 | Mobile 3
-   VERSION: 2.1 - Fixed Navbar, Scrollbars & Detail View Gaps
+   VERSION: 3.0 - Cleaned & Telegram-Style Bottom Nav
    ========================================================================== */
 
 /* ========================================================
-   1. CSS CUSTOM PROPERTIES (KEEP ALL VARIABLES)
+   1. CSS CUSTOM PROPERTIES
    ======================================================== */
 :root {
   --accent-color: #a855f7;
@@ -28,25 +28,24 @@
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px rgba(168, 85, 247, 0.4);
-  
-  /* Player specific variables */
+
+  /* Player specific */
   --player-sidebar-width: 380px;
   --player-header-height: 70px;
-  
-  /* Device-agnostic additions */
+
+  /* Device-agnostic */
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
-  --bottom-nav-height: 55px;
-  
-  /* Grid calculation variables */
-  --grid-gap-mobile: 12px;
+  --bottom-nav-height: 70px;
+
+  /* Grid gaps */
   --grid-gap-tablet: 16px;
   --grid-gap-desktop: 20px;
   --grid-padding-mobile: 12px;
   --grid-padding-tablet: 20px;
   --grid-padding-desktop: 40px;
-  
-  /* FIXED: Consistent navbar offset calculation */
+
+  /* Layout calculations */
   --navbar-offset: calc(var(--header-height) + var(--safe-top));
   --content-height: calc(100vh - var(--navbar-offset));
 }
@@ -78,36 +77,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
-  transition: var(--transition-fast);
-}
-
-ul, ol {
-  list-style: none;
-}
-
-button, input, textarea, select {
-  font-family: inherit;
-  outline: none;
-}
-
-button {
-  border: none;
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
-
-img {
-  max-width: 100%;
-  display: block;
-}
+a { text-decoration: none; color: inherit; transition: var(--transition-fast); }
+ul, ol { list-style: none; }
+button, input, textarea, select { font-family: inherit; outline: none; }
+button { border: none; cursor: pointer; transition: var(--transition-fast); }
+img { max-width: 100%; display: block; }
 
 /* ========================================================
-   SCROLLBAR REMOVAL - GLOBAL (FIXED)
+   3. SCROLLBAR REMOVAL - GLOBAL
    ======================================================== */
-/* Remove scrollbars from all elements globally */
 * {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
@@ -120,7 +98,6 @@ img {
   background: transparent !important;
 }
 
-/* Allow scrolling but hide scrollbar */
 html, body, 
 #home-view, #detail-view, #category-view, #explore-view, #live-view,
 #info-modal, .search-modal, .player-page-view,
@@ -155,10 +132,8 @@ body::-webkit-scrollbar,
 }
 
 /* ========================================================
-   3. LAYOUT COMPONENTS
+   4. NAVIGATION
    ======================================================== */
-
-/* --- Navigation - FIXED for transparent gradient animation --- */
 .navbar {
   position: fixed;
   top: 0;
@@ -170,18 +145,26 @@ body::-webkit-scrollbar,
   align-items: center;
   padding: var(--safe-top) 4% 0 4%;
   z-index: 200000;
-  /* Default: transparent gradient for hero section */
-  background: linear-gradient(to bottom, rgba(5, 5, 5, 0.95) 0%, rgba(5, 5, 5, 0.7) 50%, transparent 100%);
+  background: linear-gradient(to bottom, 
+    rgba(5, 5, 5, 1) 0%, 
+    rgba(5, 5, 5, 0.98) 15%,
+    rgba(5, 5, 5, 0.95) 30%, 
+    rgba(5, 5, 5, 0.85) 50%,
+    rgba(5, 5, 5, 0.6) 70%,
+    rgba(5, 5, 5, 0.3) 85%,
+    rgba(5, 5, 5, 0) 100%
+  );
   transition: background 0.3s ease, backdrop-filter 0.3s ease;
+  border: none !important;
+  border-bottom: none !important;
   box-shadow: none;
 }
 
-/* Solid background when scrolled or on non-hero pages */
 .navbar.solid-nav,
 .navbar.scrolled {
-  background: rgba(5, 5, 5, 0.98);
+  background: rgba(5, 5, 5, 0.98) !important;
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
 }
 
@@ -216,9 +199,7 @@ body::-webkit-scrollbar,
   text-shadow: 0 0 10px var(--accent-color);
 }
 
-.desktop-menu {
-  display: none;
-}
+.desktop-menu { display: none; }
 
 .search-trigger {
   font-size: 20px;
@@ -261,7 +242,84 @@ body::-webkit-scrollbar,
   object-fit: cover;
 }
 
-/* --- Sidebar --- */
+/* ========================================================
+   5. TELEGRAM-STYLE BOTTOM NAVIGATION
+   ======================================================== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  /* Solid dark background like Telegram */
+  background-color: rgba(18, 18, 18, 0.98);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 30000;
+  /* Safe area padding for gesture navigation */
+  padding-top: 8px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  cursor: pointer;
+  text-decoration: none;
+  width: 25%;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s ease;
+}
+
+/* Pill container for the icon */
+.nav-item .icon-container {
+  width: 60px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+}
+
+.nav-item i {
+  font-size: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.nav-item span {
+  font-size: 0.7rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+/* Active State - Telegram Style */
+.nav-item.active {
+  color: var(--accent-color);
+}
+
+.nav-item.active .icon-container {
+  background-color: rgba(168, 85, 247, 0.2);
+}
+
+.nav-item.active i {
+  color: var(--accent-color);
+}
+
+.nav-item:active {
+  transform: scale(0.95);
+}
+
+/* ========================================================
+   6. SIDEBAR
+   ======================================================== */
 .sidebar {
   position: fixed;
   top: 0;
@@ -278,9 +336,7 @@ body::-webkit-scrollbar,
   transition: left 0.3s ease;
 }
 
-.sidebar.open {
-  left: 0;
-}
+.sidebar.open { left: 0; }
 
 .sidebar-header {
   padding: 20px;
@@ -344,57 +400,11 @@ body::-webkit-scrollbar,
   display: none;
 }
 
-.overlay.active {
-  display: block;
-}
+.overlay.active { display: block; }
 
-/* --- Bottom Navigation --- */
-.bottom-nav {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: var(--bottom-nav-height);
-  background: var(--bg-color);
-  border-top: 1px solid var(--glass-border);
-  justify-content: space-around;
-  align-items: center;
-  z-index: 30000;
-}
-
-.nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px !important;
-  color: #888;
-  font-size: 0.65rem !important;
-  font-weight: 500;
-  width: 20%;
-  height: 100%;
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
-
-.nav-item i {
-  font-size: 1.15rem !important; 
-  margin-bottom: 0 !important;
-  transition: transform 0.2s ease;
-}
-
-.nav-item.active {
-  color: #fff;
-}
-
-.nav-item.active i {
-  color: var(--accent-color);
-  transform: translateY(-2px) !important;
-  text-shadow: 0 0 10px var(--accent-color);
-}
-
-/* --- Footer --- */
+/* ========================================================
+   7. FOOTER
+   ======================================================== */
 .footer {
   background: #000;
   color: #fff;
@@ -420,9 +430,7 @@ body::-webkit-scrollbar,
   gap: 40px;
 }
 
-.footer-desc {
-  max-width: 400px;
-}
+.footer-desc { max-width: 400px; }
 
 .footer-desc h4 {
   font-size: 0.85rem;
@@ -527,7 +535,7 @@ body::-webkit-scrollbar,
 }
 
 /* ========================================================
-   4. GLOW EFFECTS & COMPONENTS
+   8. GLOW EFFECTS
    ======================================================== */
 .play-btn-primary, .slider-btn.btn-play-slide, .contact-btn {
   box-shadow: var(--shadow-glow);
@@ -551,7 +559,7 @@ body::-webkit-scrollbar,
 }
 
 /* ========================================================
-   5. VIEWS & CONTAINERS - FIXED FOR MOBILE
+   9. VIEWS & CONTAINERS
    ======================================================== */
 #home-view {
   padding-bottom: 0;
@@ -565,10 +573,14 @@ body::-webkit-scrollbar,
   min-height: calc(100vh - var(--header-height));
   background: var(--bg-color);
   animation: fadeIn 0.5s ease;
-  padding-top: 80px;
+  padding-top: 0;
+  top: var(--navbar-offset);
+  height: var(--content-height);
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
-/* --- Detail View - FIXED GAP ISSUES --- */
+/* Detail View */
 #detail-view {
   position: fixed;
   inset: 0;
@@ -578,7 +590,8 @@ body::-webkit-scrollbar,
   overflow-y: auto;
   overflow-x: hidden;
   animation: fadeIn 0.3s ease;
-  padding-top: var(--safe-top);
+  padding-top: 0;
+  top: 0;
   padding-bottom: calc(20px + var(--safe-bottom));
 }
 
@@ -587,7 +600,6 @@ body::-webkit-scrollbar,
   flex-direction: column;
 }
 
-/* --- Backdrop Layer - FIXED to extend fully --- */
 .detail-backdrop-layer {
   position: relative;
   top: 0;
@@ -610,13 +622,11 @@ body::-webkit-scrollbar,
   object-position: center 20%;
   opacity: 0.5;
   display: block;
-  /* Extended mask to cover more area */
   mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
   transition: opacity 0.3s ease;
 }
 
-/* Darker overlay for better text contrast */
 .detail-overlay-gradient {
   position: absolute;
   inset: 0;
@@ -630,7 +640,6 @@ body::-webkit-scrollbar,
   );
 }
 
-/* Close button - FIXED position within backdrop */
 .close-detail-btn {
   position: absolute;
   top: calc(var(--safe-top) + 15px);
@@ -664,7 +673,6 @@ body::-webkit-scrollbar,
   font-size: 1.1rem;
 }
 
-/* --- Content Wrapper - FIXED negative margin to pull up over backdrop --- */
 .detail-content-wrapper {
   position: relative;
   z-index: 10;
@@ -675,11 +683,11 @@ body::-webkit-scrollbar,
   display: flex;
   flex-direction: column;
   flex: 1;
-  /* Increased negative margin to eliminate gap */
   margin-top: -220px;
+  padding-top: 70px;
+  padding-bottom: 90px;
 }
 
-/* --- Hero Layout - Poster + Info Side by Side --- */
 .detail-hero-layout {
   display: flex;
   align-items: flex-end;
@@ -688,7 +696,6 @@ body::-webkit-scrollbar,
   position: relative;
 }
 
-/* --- Poster Card - Positioned Over Backdrop --- */
 .detail-poster-card {
   flex-shrink: 0;
   width: 200px;
@@ -713,7 +720,6 @@ body::-webkit-scrollbar,
   object-fit: cover;
 }
 
-/* --- Info Box --- */
 .detail-info-box {
   flex: 1;
   display: flex;
@@ -761,11 +767,8 @@ body::-webkit-scrollbar,
   gap: 5px;
 }
 
-.rating-box i {
-  font-size: 0.8rem;
-}
+.rating-box i { font-size: 0.8rem; }
 
-/* --- Genre Pills --- */
 .genre-pills-row {
   display: flex;
   flex-wrap: wrap;
@@ -791,7 +794,6 @@ body::-webkit-scrollbar,
   transform: translateY(-2px);
 }
 
-/* --- Overview --- */
 #detail-overview {
   max-width: 700px;
   font-size: 1.05rem;
@@ -801,7 +803,6 @@ body::-webkit-scrollbar,
   text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
-/* --- Action Buttons --- */
 .detail-actions {
   display: flex;
   gap: 15px;
@@ -865,7 +866,6 @@ body::-webkit-scrollbar,
   color: #2ecc71;
 }
 
-/* --- Recommendations Section --- */
 .recommendations-section {
   margin-top: 30px;
   padding-top: 30px;
@@ -902,7 +902,6 @@ body::-webkit-scrollbar,
   gap: 15px;
 }
 
-/* Ensure cards fill the grid cells completely */
 .recommendations-grid .movie-card {
   width: 100% !important;
   max-width: 100% !important;
@@ -910,7 +909,6 @@ body::-webkit-scrollbar,
   margin: 0 !important;
 }
 
-/* Poster fills entire card area */
 .recommendations-grid .card-poster {
   width: 100% !important;
   aspect-ratio: 2/3;
@@ -919,7 +917,6 @@ body::-webkit-scrollbar,
   position: relative;
 }
 
-/* Image fills poster completely */
 .recommendations-grid .card-poster img {
   width: 100% !important;
   height: 100% !important;
@@ -932,21 +929,68 @@ body::-webkit-scrollbar,
   display: none;
   flex-direction: column;
   width: 100%;
-  min-height: 100vh;
+  height: var(--content-height);
   background: var(--bg-color);
   position: fixed;
-  top: 0;
+  top: var(--navbar-offset);
   left: 0;
-  z-index: 60000;
-  padding-top: 80px;
+  z-index: 55000;
+  padding-top: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-#category-view.active {
+#category-view.active { display: flex; }
+
+.category-header {
+  position: relative;
+  padding: 20px 15px;
+  background: #181818;
   display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
 }
+
+#category-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
+  text-transform: capitalize;
+  padding-right: 60px;
+}
+
+.category-header i {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%) scaleX(-1);
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+}
+
+.category-header i:hover {
+  background: #fff;
+  color: #000;
+}
+
+
 
 /* ========================================================
-   14. EXPLORE VIEW - FIXED FOR MOBILE
+   10. EXPLORE VIEW
    ======================================================== */
 #explore-view {
   display: flex;
@@ -955,20 +999,18 @@ body::-webkit-scrollbar,
   height: 100vh;
   overflow-y: auto;
   background: var(--bg-color);
-  padding-top: calc(var(--header-height) + var(--safe-top));
+  padding-top: 0;
+  top: var(--navbar-offset);
   position: fixed;
-  top: 0;
   left: 0;
   z-index: 50;
 }
 
-/* When explore is "active" (should always be true when visible) */
 #explore-view.active {
   display: flex;
   z-index: 55;
 }
 
-/* Alternative: If you use hidden/shown classes */
 #explore-view.hidden {
   display: none;
   z-index: -1;
@@ -1001,9 +1043,7 @@ body::-webkit-scrollbar,
 
 .explore-type-pills::-webkit-scrollbar,
 .explore-region-pills::-webkit-scrollbar,
-.explore-sort-pills::-webkit-scrollbar {
-  display: none;
-}
+.explore-sort-pills::-webkit-scrollbar { display: none; }
 
 .explore-pill {
   padding: 8px 18px;
@@ -1065,7 +1105,6 @@ body::-webkit-scrollbar,
   border-color: #555;
 }
 
-/* The grid container for explore results */
 .explore-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1075,42 +1114,8 @@ body::-webkit-scrollbar,
   overflow-y: auto;
 }
 
-/* Tablet */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .explore-grid {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 20px;
-    padding: 20px 30px;
-  }
-}
-
-/* Desktop */
-@media (min-width: 1024px) {
-#live-view {
-    padding-top: 0 !important;
-    top: 70px !important;
-    height: calc(100vh - 70px) !important;
-  }
-
-  /* Ensure the container inside aligns properly */
-  .live-player-container {
-    height: 100% !important;
-    max-height: none !important;
-  }
-  
-  .explore-grid {
-    grid-template-columns: repeat(9, 1fr);
-    gap: 25px;
-    padding: 30px 40px;
-  }
-  
-  #explore-view {
-    padding-top: 80px;
-  }
-}
-
 /* ========================================================
-   6. HOME PAGE COMPONENTS
+   11. HOME PAGE COMPONENTS
    ======================================================== */
 .slider-viewport {
   position: relative;
@@ -1377,8 +1382,6 @@ body::-webkit-scrollbar,
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   background: #222;
-  width: 100%;
-  aspect-ratio: 2/3;
 }
 
 .card-poster img {
@@ -1386,9 +1389,6 @@ body::-webkit-scrollbar,
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
   display: block;
 }
 
@@ -1468,16 +1468,8 @@ body::-webkit-scrollbar,
 }
 
 /* ========================================================
-   7. LIVE TV VIEW - CONSOLIDATED LAYOUT
+   12. LIVE TV VIEW
    ======================================================== */
-
-/* --- Base Live TV Styles --- */
-#live-view {
-  flex-direction: column;
-  height: var(--content-height);
-  overflow: hidden;
-}
-
 .live-player-container {
   width: 100%;
   background: #000;
@@ -1547,6 +1539,8 @@ body::-webkit-scrollbar,
   overflow: hidden;
   min-height: 0;
   padding: 15px;
+  /* FIX: Add padding for bottom nav + system gesture area */
+  padding-bottom: calc(15px + var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
 }
 
 .search-container {
@@ -1617,6 +1611,7 @@ body::-webkit-scrollbar,
   overflow-y: auto;
   min-height: 0;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 .channel-list-wrapper::-webkit-scrollbar {
@@ -1632,7 +1627,8 @@ body::-webkit-scrollbar,
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-bottom: calc(var(--bottom-nav-height) + 20px);
+  /* FIX: Extra padding for bottom nav + safe area + spacing */
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 20px);
 }
 
 .channel-button {
@@ -1744,44 +1740,40 @@ body::-webkit-scrollbar,
   margin-top: 2px;
 }
 
-/* 5. The Anime Selector Dark Theme (BULLETPROOF) */
+/* Anime Selector */
 .anime-selector-container select {
-    width: 100% !important;
-    height: 50px !important;
-    display: block !important;
-    padding: 0 40px 0 20px !important;
-    background-color: #1a1a1a !important;
-    color: #fff !important;
-    border: 1px solid #333 !important;
-    border-radius: 12px !important;
-    font-size: 0.95rem !important;
-    margin: 0 0 12px 0 !important;
-    
-    /* Force ALL browsers to kill the white box */
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    
-    /* Custom dark dropdown arrow */
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 15px center !important;
-    background-size: 16px !important;
-    outline: none !important;
-    font-family: inherit !important;
-    cursor: pointer !important;
-    box-sizing: border-box !important;
+  width: 100% !important;
+  height: 50px !important;
+  display: block !important;
+  padding: 0 40px 0 20px !important;
+  background-color: #1a1a1a !important;
+  color: #fff !important;
+  border: 1px solid #333 !important;
+  border-radius: 12px !important;
+  font-size: 0.95rem !important;
+  margin: 0 0 12px 0 !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 15px center !important;
+  background-size: 16px !important;
+  outline: none !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
 }
 
 .anime-selector-container select:focus {
-    border-color: var(--accent-color) !important;
-    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2) !important;
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2) !important;
 }
 
 .anime-selector-container select option {
-    background-color: #1a1a1a !important;
-    color: #fff !important;
-    padding: 10px !important;
+  background-color: #1a1a1a !important;
+  color: #fff !important;
+  padding: 10px !important;
 }
 
 .clear-fav-btn {
@@ -1796,322 +1788,7 @@ body::-webkit-scrollbar,
 }
 
 /* ========================================================
-   8A. DETAIL VIEW - MOBILE RESPONSIVE (FIXED GAPS)
-   ======================================================== */
-
-@media (max-width: 768px) {
-  /* FIXED: Backdrop height and gradient for seamless transition */
-  .detail-backdrop-layer {
-    height: 55vh;
-    min-height: 350px;
-    max-height: 550px;
-  }
-  
-  #detail-backdrop-img {
-    object-position: center top;
-    /* Extended mask to prevent gap */
-    mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-  }
-  
-  /* FIXED: Increased negative margin to pull content up over backdrop */
-  .detail-content-wrapper {
-    margin-top: -150px;
-    padding: calc(var(--navbar-offset) + 10px) 15px 30px 15px;
-  }
-  
-  .detail-hero-layout {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 25px;
-    margin-bottom: 30px;
-  }
-  
-  .detail-poster-card {
-    width: 160px;
-    margin: 0 auto;
-    box-shadow: 0 15px 50px rgba(0,0,0,0.9);
-  }
-  
-  .detail-info-box {
-    align-items: center;
-    text-align: center;
-    width: 100%;
-  }
-  
-  #detail-title {
-    font-size: 1.8rem;
-    line-height: 1.2;
-    margin-bottom: 12px;
-  }
-  
-  .detail-meta-row {
-    justify-content: center;
-    font-size: 0.9rem;
-    margin-bottom: 15px;
-  }
-  
-  .genre-pills-row {
-    justify-content: center;
-    margin-bottom: 20px;
-  }
-  
-  .genre-pill {
-    font-size: 0.8rem;
-    padding: 5px 12px;
-  }
-  
-  #detail-overview {
-    text-align: center;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    margin-bottom: 25px;
-    max-width: 100%;
-  }
-  
-  .detail-actions {
-    max-width: 100%;
-    justify-content: center;
-    gap: 12px;
-  }
-  
-  .play-btn-primary,
-  .watchlist-btn {
-    padding: 12px 20px;
-    font-size: 1rem;
-  }
-  
-  .close-detail-btn {
-    top: calc(var(--navbar-offset) + 10px);
-    right: 10px;
-    width: 42px;
-    height: 42px;
-    font-size: 16px;
-    z-index: 300000;
-  }
-  
-  /* FIXED: Full Width Background for Mobile */
-  .recommendations-section {
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-    margin-top: 30px;
-    padding-top: 30px;
-    padding-bottom: 80px;
-    background: #141414;
-    position: relative;
-    z-index: 10;
-  }
-
-  .recommendations-section h3 {
-    font-size: 1.1rem;
-    margin-bottom: 20px;
-    justify-content: flex-start;
-    padding: 0 20px;
-  }
-
-  .recommendations-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    padding: 0 20px;
-  }
-}
-
-/* ========================================================
-   8B. DETAIL VIEW - TABLET RESPONSIVE
-   ======================================================== */
-
-@media (min-width: 769px) and (max-width: 1023px) {
-  
-  .detail-backdrop-layer {
-    height: 55vh;
-    max-height: 600px;
-  }
-  
-  .detail-content-wrapper {
-    margin-top: -140px;
-    padding: calc(var(--navbar-offset) + 20px) 30px 40px 30px;
-  }
-  
-  .detail-poster-card {
-    width: 220px;
-  }
-  
-  #detail-title {
-    font-size: 2.2rem;
-  }
-  
-  .close-detail-btn {
-    z-index: 300000;
-  }
-  
-  .recommendations-section h3 {
-    padding: 15px 30px 0 30px;
-  }
-  
-  .recommendations-grid {
-    grid-template-columns: repeat(6, 1fr) !important;
-    gap: 16px;
-    padding: 0 30px 40px 30px;
-  }
-}
-
-/* ========================================================
-   8C. DETAIL VIEW - DESKTOP RESPONSIVE
-   ======================================================== */
-
-@media (min-width: 1024px) {
-  .detail-backdrop-layer {
-    height: 70vh;
-    max-height: 800px;
-  }
-  
-  #detail-backdrop-img {
-    object-position: center 15%;
-    mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-  }
-  
-  .detail-content-wrapper {
-    margin-top: -120px;
-    padding: calc(var(--navbar-offset) + 40px) 40px 60px 40px;
-  }
-  
-  .detail-hero-layout {
-    gap: 40px;
-    margin-bottom: 50px;
-  }
-  
-  .detail-poster-card {
-    width: 280px;
-    border-radius: var(--border-radius-xl);
-  }
-  
-  #detail-title {
-    font-size: 3.5rem;
-    margin-bottom: 20px;
-  }
-  
-  .detail-meta-row {
-    font-size: 1.1rem;
-    margin-bottom: 25px;
-  }
-  
-  .genre-pills-row {
-    margin-bottom: 30px;
-  }
-  
-  .genre-pill {
-    font-size: 0.9rem;
-    padding: 8px 20px;
-  }
-  
-  #detail-overview {
-    font-size: 1.15rem;
-    line-height: 1.8;
-    margin-bottom: 35px;
-    max-width: 800px;
-  }
-  
-  .detail-actions {
-    max-width: 500px;
-    gap: 20px;
-  }
-  
-  .play-btn-primary,
-  .watchlist-btn {
-    padding: 16px 32px;
-    font-size: 1.2rem;
-  }
-  
-  .close-detail-btn {
-    top: calc(var(--navbar-offset) + 20px);
-    right: 25px;
-    width: 50px;
-    height: 50px;
-    font-size: 20px;
-    z-index: 300000;
-  }
-  
-  .recommendations-section {
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-    margin-top: 60px;
-    padding-top: 50px;
-    padding-bottom: 50px;
-    background: #141414;
-    min-height: auto;
-    position: relative;
-    z-index: 10;
-  }
-
-  .recommendations-section h3 {
-    font-size: 1.5rem;
-    margin-bottom: 30px;
-    max-width: 1400px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 40px;
-  }
-
-.recommendations-grid {
-    grid-template-columns: repeat(6, 1fr) !important;
-    gap: 20px;
-    padding: 0 40px 60px 40px;
-  }
-
-  .recommendations-grid .movie-card {
-    width: 100% !important;
-  }
-  
-  .recommendations-grid .card-poster {
-    border-radius: var(--border-radius-lg);
-  }
-}
-
-/* ========================================================
-   8D. DETAIL VIEW - LARGE DESKTOP
-   ======================================================== */
-
-@media (min-width: 1400px) {
-  .detail-backdrop-layer {
-    max-height: 900px;
-  }
-  
-  .detail-content-wrapper {
-    margin-top: -140px;
-    max-width: 95%;
-    padding: calc(var(--navbar-offset) + 40px) 60px 60px 60px;
-  }
-  
-  .detail-poster-card {
-    width: 320px;
-  }
-  
-  #detail-title {
-    font-size: 4rem;
-  }
-  
-  .recommendations-section {
-    padding-bottom: 60px;
-  }
-  
-  .recommendations-section h3 {
-    max-width: 95%;
-    padding: 0 60px;
-  }
-  
-  .recommendations-grid {
-    grid-template-columns: repeat(6, 1fr) !important;
-    gap: 30px;
-    max-width: 95%;
-    margin: 0 auto;
-    padding: 0 60px;
-  }
-}
-
-/* ========================================================
-   9. SEARCH MODAL (Page Layout)
+   13. SEARCH MODAL
    ======================================================== */
 .search-header-row {
   display: flex;
@@ -2269,19 +1946,36 @@ body::-webkit-scrollbar,
 }
 
 /* ========================================================
-   10. INFO MODAL (Page Layout)
+   14. INFO MODAL
    ======================================================== */
+#info-modal {
+  display: flex !important;
+  flex-direction: column !important;
+  position: fixed !important;
+  top: var(--navbar-offset, 70px) !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: var(--content-height, calc(100vh - 70px)) !important;
+  min-height: var(--content-height, calc(100vh - 70px)) !important;
+  background-color: var(--bg-color, #050505) !important;
+  z-index: 60000 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  bottom: auto !important;
+  overflow: hidden !important;
+}
+
 .info-content-wrapper {
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  padding: 0;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  background: var(--bg-color, #050505);
+  padding: 0 !important;
   border-radius: 0;
   box-shadow: none;
   display: flex;
   flex-direction: column;
   max-width: none;
-  max-height: none;
 }
 
 .info-header {
@@ -2295,6 +1989,7 @@ body::-webkit-scrollbar,
   justify-content: flex-start;
   position: relative;
   z-index: 10;
+  width: 100%;
 }
 
 #info-title {
@@ -2329,33 +2024,76 @@ body::-webkit-scrollbar,
   color: #000;
 }
 
+/* FIX: Full width body with inner content wrapper */
 .info-body {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  width: 100%;
+  background: var(--bg-color, #050505); /* Full background */
+  overscroll-behavior-y: contain;
+  /* REMOVE these from original CSS: */
+  /* max-width: 1000px; */
+  /* margin: 0 auto; */
+  /* padding: 20px; */
+}
+
+/* Inner content wrapper - centers content but keeps full bg */
+.info-body > div {
   max-width: 1000px;
   margin: 0 auto;
+  padding: 20px;
+  min-height: 100%; /* Ensure it fills viewport even if content is short */
+  background: transparent;
+}
+
+/* Ensure all content sections fill width properly */
+.info-body .update-item,
+.info-body .faq-item,
+.info-body .faq-container,
+.info-body .privacy-container,
+.info-body > div > div {
   width: 100%;
-  padding-bottom: calc(var(--bottom-nav-height) + 20px);
+  box-sizing: border-box;
 }
 
-.info-body::-webkit-scrollbar { width: 6px; }
-
-.info-body::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 10px;
+/* Specific fix for DonateContent wrapper */
+.info-body > div[style*="max-width: 500px"] {
+  max-width: 500px !important; /* Keep donate section narrower */
+  margin: 0 auto;
 }
 
-.update-item, .faq-item {
+/* FAQ container specific */
+.faq-container {
+  width: 100%;
+  padding: 10px 0;
+}
+
+/* Privacy container specific */
+.privacy-container {
+  width: 100%;
+  padding: 10px 0;
+  color: #ccc;
+  line-height: 1.6;
+}
+
+/* Update items styling */
+.update-item {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--border-radius-lg);
   padding: 20px;
   margin-bottom: 15px;
-  transition: background 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.update-item:hover, .faq-item:hover { background: rgba(255, 255, 255, 0.08); }
+.update-item:last-child {
+  margin-bottom: 40px;
+}
+
+.update-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
 
 .update-header {
   display: flex;
@@ -2395,6 +2133,21 @@ body::-webkit-scrollbar,
   font-weight: 600;
 }
 
+/* FAQ items styling */
+.faq-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius-lg);
+  padding: 20px;
+  margin-bottom: 15px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.faq-item:last-child {
+  margin-bottom: 40px;
+}
+
 .faq-question {
   font-size: 1.1rem;
   font-weight: 700;
@@ -2417,6 +2170,7 @@ body::-webkit-scrollbar,
   padding-left: 28px;
 }
 
+/* Contact form styling */
 .contact-input {
   width: 100%;
   padding: 12px 15px;
@@ -2427,9 +2181,12 @@ body::-webkit-scrollbar,
   font-family: inherit;
   outline: none;
   transition: border-color 0.3s;
+  box-sizing: border-box;
 }
 
-.contact-input:focus { border-color: var(--accent-color); }
+.contact-input:focus {
+  border-color: var(--accent-color);
+}
 
 .contact-btn {
   width: 100%;
@@ -2442,6 +2199,7 @@ body::-webkit-scrollbar,
   cursor: pointer;
   font-size: 1rem;
   transition: transform 0.2s;
+  box-sizing: border-box;
 }
 
 .contact-btn:hover {
@@ -2449,11 +2207,23 @@ body::-webkit-scrollbar,
   background: #ff0f1f;
 }
 
-/* ========================================================
-   11. PLAYER PAGE VIEW (Page Layout)
-   ======================================================== */
+/* Scrollbar styling */
+.info-body::-webkit-scrollbar {
+  width: 6px;
+}
 
-/* --- Layout Container --- */
+.info-body::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 10px;
+}
+
+.info-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ========================================================
+   15. PLAYER PAGE VIEW
+   ======================================================== */
 .player-layout {
   display: flex;
   width: 100%;
@@ -2461,7 +2231,6 @@ body::-webkit-scrollbar,
   flex-direction: column;
 }
 
-/* --- Video Section --- */
 .video-section {
   background: #000;
   display: flex;
@@ -2487,7 +2256,6 @@ body::-webkit-scrollbar,
   border: none;
 }
 
-/* --- Sidebar Section --- */
 .sidebar-section {
   background: #121212;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -2502,7 +2270,6 @@ body::-webkit-scrollbar,
   padding: 20px;
 }
 
-/* --- Back Button --- */
 .player-page-view .close-player-btn {
   position: absolute;
   top: 15px;
@@ -2529,7 +2296,6 @@ body::-webkit-scrollbar,
   transform: scale(1.1);
 }
 
-/* --- Typography --- */
 .sidebar-title {
   font-size: 1.4rem;
   font-weight: 700;
@@ -2548,7 +2314,6 @@ body::-webkit-scrollbar,
   font-weight: 500;
 }
 
-/* --- Description Box --- */
 .description-box {
   background: #1a1a1a;
   border: 1px solid #333;
@@ -2610,7 +2375,6 @@ body::-webkit-scrollbar,
   border-radius: 4px;
 }
 
-/* --- Controls Grid --- */
 .controls-grid {
   display: flex;
   gap: 15px;
@@ -2632,7 +2396,6 @@ body::-webkit-scrollbar,
   letter-spacing: 0.5px;
 }
 
-/* --- Dropdowns & Inputs --- */
 .custom-dropdown { position: relative; }
 
 .dropdown-btn, .dark-select, .dark-input {
@@ -2720,7 +2483,6 @@ body::-webkit-scrollbar,
   color: #aaa;
 }
 
-/* --- Episode Grid --- */
 .episode-header {
   display: flex;
   justify-content: space-between;
@@ -2765,7 +2527,6 @@ body::-webkit-scrollbar,
   padding: 20px;
 }
 
-/* --- Switch Toggle --- */
 .switch { position: relative; width: 36px; height: 20px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider {
@@ -2792,7 +2553,7 @@ input:checked + .slider:before { transform: translateX(16px); }
 input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 
 /* ========================================================
-   12. AUTHENTICATION
+   16. AUTHENTICATION
    ======================================================== */
 .auth-wrapper { position: relative; }
 
@@ -2888,7 +2649,7 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 .menu-item.logout:hover { background: rgba(239, 68, 68, 0.1); }
 
 /* ========================================================
-   13. SKELETON LOADING
+   17. SKELETON LOADING
    ======================================================== */
 .skeleton {
   background: #222;
@@ -2941,8 +2702,10 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
   animation: fadeInUp 0.5s ease-out forwards;
 }
 
+
+
 /* ========================================================
-   14. USER ACTIONS & CARDS
+   18. USER ACTIONS & CARDS
    ======================================================== */
 .continue-card, .movie-card, .history-card {
   position: relative;
@@ -3204,1105 +2967,7 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 }
 
 /* ========================================================
-   15. EXPLORE VIEW
-   ======================================================== */
-.explore-header-wrapper {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(5, 5, 5, 0.98);
-  backdrop-filter: blur(10px);
-  padding: 15px 15px 10px 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  flex-shrink: 0;
-}
-
-.explore-type-pills,
-.explore-region-pills,
-.explore-sort-pills {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  white-space: nowrap;
-  scrollbar-width: none;
-  padding-bottom: 5px;
-}
-
-.explore-type-pills::-webkit-scrollbar,
-.explore-region-pills::-webkit-scrollbar,
-.explore-sort-pills::-webkit-scrollbar {
-  display: none;
-}
-
-.explore-pill {
-  padding: 8px 18px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border-radius: 50px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all 0.2s ease;
-  font-family: inherit;
-  line-height: 1;
-  border: 1px solid transparent;
-  background: transparent;
-  color: #aaa;
-}
-
-.explore-pill:hover {
-  transform: translateY(-1px);
-  color: #fff;
-}
-
-.explore-pill--type {
-  background: rgba(168, 85, 247, 0.1);
-  border-color: rgba(168, 85, 247, 0.2);
-  color: #d8b4fe;
-}
-
-.explore-pill--type.is-active {
-  background: var(--accent-color);
-  border-color: var(--accent-color);
-  color: #fff;
-  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
-}
-
-.explore-pill--region {
-  border-color: #333;
-}
-
-.explore-pill--region:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.explore-pill--region.is-active {
-  background: #fff;
-  border-color: #fff;
-  color: #000;
-  font-weight: 700;
-}
-
-.explore-pill--sort {
-  font-size: 0.8rem;
-  padding: 6px 14px;
-  border-color: #333;
-}
-
-.explore-pill--sort.is-active {
-  background: #333;
-  color: #fff;
-  border-color: #555;
-}
-
-/* ========================================================
-   16. ANIMATIONS
-   ======================================================== */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* ========================================================
-   17. RESPONSIVE MEDIA QUERIES (Consolidated)
-   ======================================================== */
-
-/* --- Mobile & Tablet (1023px and below) --- */
-@media (max-width: 1023px) {
-  .navbar { padding: var(--safe-top) 5% 0 5%; }
-  .logo-text { font-size: 18px; }
-  
-  .slider-viewport {
-    height: 70vh;
-    max-height: 600px;
-  }
-  .slide-content {
-    bottom: 30px;
-    text-align: center;
-    left: 20px;
-    right: 20px;
-    align-items: center;
-  }
-  .slide-meta, .slide-actions { justify-content: center; }
-  .slide-desc {
-    margin: 0 auto 25px auto;
-    font-size: 0.95rem;
-    max-width: 90%;
-  }
-  .slider-btn {
-    padding: 10px 24px;
-    font-size: 1rem;
-  }
-  
-  .movie-card { width: 120px; }
-  .list { gap: 10px; padding-right: 15px; }
-  
-/* Mobile Grid - 3 columns with FULL WIDTH layout */
-#category-grid,
-#search-results,
-.explore-grid,
-.search-modal-v2__results,
-.recommendations-grid {
-  display: grid !important;
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 10px;
-  padding: 10px !important;
-  width: 100%;
-  box-sizing: border-box;
-  place-items: start stretch;
-}
-
-#category-grid .movie-card,
-#search-results .movie-card,
-.explore-grid .movie-card,
-.search-modal-v2__results .movie-card,
-.recommendations-grid .movie-card {
-  width: 100% !important;
-  max-width: 100% !important;
-  margin: 0;
-}
-
-#category-grid .card-poster,
-#search-results .card-poster,
-.explore-grid .card-poster,
-.search-modal-v2__results .card-poster,
-.recommendations-grid .card-poster {
-  width: 100%;
-  aspect-ratio: 2/3;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-#category-grid .card-poster img,
-#search-results .card-poster img,
-.explore-grid .card-poster img,
-.search-modal-v2__results .card-poster img,
-.recommendations-grid .card-poster img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-  .footer-top {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 50px;
-  }
-  .footer-nav-wrapper {
-    flex-direction: column;
-    gap: 40px;
-    width: 100%;
-    align-items: center;
-  }
-  .footer-col { align-items: center; width: 100%; }
-  .social-row { justify-content: center; width: 100%; }
-  .footer-bottom {
-    flex-direction: column;
-    gap: 10px;
-    text-align: center;
-  }
-  
-  .bottom-nav { 
-    display: flex;
-    background: var(--bg-color);
-    backdrop-filter: none;
-  }
-  
-  .hamburger { display: none; }
-  
-  #home-view, #live-view, .category-content {
-    padding-bottom: 0;
-  }
-  .footer { padding-bottom: 90px; }
-  
-  .channel-button { padding: 15px 20px; }
-  .channel-logo { width: 50px; height: 50px; }
-  .channel-name { font-size: 1rem; }
-  
-  /* Mobile Detail View */
-  .detail-backdrop-layer {
-    position: relative;
-    height: 40vh;
-  }
-  #detail-backdrop-img {
-    height: 100%;
-    object-position: center top;
-  }
-  .detail-content-wrapper { 
-    padding-top: 0; 
-    padding-left: 15px; 
-    padding-right: 15px;
-  }
-  .detail-poster-card {
-    margin-top: -50px;
-    width: 150px;
-  }
-  .close-detail-btn {
-    top: 15px;
-    right: 15px;
-  }
-  .detail-hero-layout {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 20px;
-    margin-top: -40px;
-  }
-  .detail-info-box { 
-    align-items: center; 
-    text-align: center;
-  }
-  .detail-meta-row, .genre-pills-row, .detail-actions { 
-    justify-content: center; 
-  }
-  #detail-title { font-size: 1.8rem; }
-  #detail-overview { 
-    text-align: center; 
-    font-size: 0.95rem;
-  }
-  .detail-actions {
-    max-width: 100%;
-    padding: 0 20px;
-  }
-
-  /* Mobile Live TV - Sticky Player + Scrollable List */
-  #live-view {
-    display: flex;
-    flex-direction: column;
-    height: var(--content-height);
-    overflow: hidden;
-  }
-  
-  .live-player-container {
-    width: 100%;
-    aspect-ratio: 16/9;
-    height: auto;
-    flex-shrink: 0;
-    position: relative;
-  }
-  
-  #playerWrapper {
-    width: 100%;
-    height: 100%;
-    aspect-ratio: 16/9;
-  }
-
-  .channel-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    min-height: 0;
-    padding: 15px;
-    gap: 10px;
-    overflow: hidden;
-  }
-  
-  .search-container,
-  .category-dropdown-btn,
-  .channel-count-display {
-    flex-shrink: 0;
-  }
-
-  .channel-list-wrapper {
-    flex: 1;
-    width: 100%;
-    overflow-y: auto;
-    min-height: 0;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .channel-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-bottom: calc(var(--bottom-nav-height) + 20px);
-  }
-
-  .channel-button {
-    min-height: 70px;
-    height: 70px;
-    flex-shrink: 0;
-  }
-  
-  /* Mobile Player Layout */
-  .player-layout {
-    flex-direction: column;
-    height: 100%;
-  }
-  
-  .video-section {
-    width: 100%;
-    aspect-ratio: 16/9;
-    flex-shrink: 0;
-  }
-
-  .sidebar-section {
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    flex: 1;
-    overflow-y: auto;
-  }
-  
-  .player-page-view .close-player-btn {
-    top: 10px;
-    left: 10px;
-    width: 40px;
-    height: 40px;
-    font-size: 1rem;
-  }
-  
-  .sidebar-content {
-    padding: 15px;
-    padding-bottom: calc(var(--bottom-nav-height) + 20px);
-  }
-}
-
-/* --- Mobile Specific (768px and below) --- */
-@media (max-width: 768px) {
-  :root {
-    --header-height: 55px;
-  }
-  
-  .back-to-top {
-    bottom: 80px;
-    right: 20px;
-    width: 45px;
-    height: 45px;
-  }
-  
-  .channel-count-display {
-    width: 100%;
-    padding: 0 15px;
-    margin-bottom: 10px;
-    box-sizing: border-box;
-  }
-  
-  .footer-desc {
-    text-align: center;
-    margin: 0 auto;
-    max-width: 90%;
-  }
-  .footer-big-text {
-    font-size: clamp(2.5rem, 12vw, 3.5rem);
-    text-align: center;
-    margin: 20px auto 0 auto;
-    width: 100%;
-    display: block;
-  }
-  .footer { padding-bottom: 30px; }
-  body:has(.bottom-nav) .footer {
-    padding-bottom: 90px;
-  }
-  
-  /* Mobile Navbar - FIXED for transparent animation */
-  .navbar {
-    padding: var(--safe-top) 5% 0 5%;
-    height: var(--navbar-offset);
-    align-items: center;
-    /* Default gradient for hero section */
-    background: linear-gradient(to bottom, 
-      rgba(5, 5, 5, 0.98) 0%, 
-      rgba(5, 5, 5, 0.9) 50%, 
-      rgba(5, 5, 5, 0.7) 80%,
-      transparent 100%
-    );
-    border-bottom: none;
-    z-index: 200000;
-    transition: background 0.3s ease;
-  }
-  
-  /* Solid background when scrolled - JavaScript adds .scrolled class */
-  .navbar.scrolled {
-    background: rgba(5, 5, 5, 0.98) !important;
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--glass-border);
-  }
-  
-  .logo-text { font-size: 1.2rem; }
-  .nav-avatar { width: 32px; height: 32px; }
-  
-  /* Home View */
-  #home-view { padding-top: 0; }
-  
-  /* All page views use consistent navbar offset */
-  #explore-view,
-  #category-view,
-  .search-modal,
-  #info-modal,
-  #live-view,
-  .player-page-view {
-    top: var(--navbar-offset);
-    height: var(--content-height);
-  }
-  
-  /* Detail Back Button */
-  .close-detail-btn {
-    top: 15px;
-    right: 15px;
-    z-index: 200001;
-  }
-}
-
-/* --- Small Mobile (480px and up) --- */
-@media (min-width: 480px) {
-  .search-modal-v2__results {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    padding: 16px 20px;
-  }
-  .explore-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    padding: 20px;
-  }
-}
-
-/* --- Tablet (768px and up) --- */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .search-modal-v2__results {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 16px;
-    padding: 20px 24px;
-  }
-  .explore-grid {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 25px;
-    padding: 30px 40px;
-  }
-  .channel-count-display {
-    width: 100%;
-    margin: 0;
-    padding: 12px 20px;
-    box-sizing: border-box;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #111;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #aaa;
-    text-transform: uppercase;
-  }
-  .channel-count-display > span:last-child,
-  .channel-count-display > div:last-child {
-    text-align: right;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-    color: var(--accent-color);
-  }
-  
-  /* Tablet Grid - 6 columns */
-  #category-grid,
-  #search-results,
-  .explore-grid,
-  .search-modal-v2__results,
-  .recommendations-grid {
-    grid-template-columns: repeat(6, 1fr) !important;
-    gap: 16px;
-    padding: 16px !important;
-    place-items: start stretch;
-  }
-
-  #category-grid .movie-card,
-  #search-results .movie-card,
-  .explore-grid .movie-card,
-  .search-modal-v2__results .movie-card,
-  .recommendations-grid .movie-card {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-  
-  /* Tablet Live TV */
-  .live-player-container {
-    max-height: 50vh;
-    min-height: 280px;
-  }
-  
-  #playerWrapper, #video {
-    max-height: 50vh;
-  }
-  
-  .channel-section {
-    padding: 16px;
-    padding-bottom: calc(var(--bottom-nav-height) + 20px) !important;
-  }
-  
-  .search-container input,
-  .category-dropdown-btn {
-    height: 48px;
-    font-size: 0.95rem;
-  }
-  
-  .channel-button {
-    min-height: 72px;
-    height: 72px;
-    padding: 12px 16px;
-  }
-  
-  .channel-logo {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .channel-name {
-    font-size: 0.95rem;
-  }
-  
-  /* Tablet Detail View */
-  .detail-backdrop-layer {
-    height: 45vh;
-  }
-  .detail-poster-card {
-    width: 180px;
-  }
-  #detail-title {
-    font-size: 2.2rem;
-  }
-}
-
-/* --- Desktop (1024px and up) --- */
-@media (min-width: 1024px) {
-  /* Navigation */
-  .hamburger { display: none; }
-  .desktop-menu { 
-    display: flex; 
-    align-items: center; 
-    gap: 30px; 
-    margin-left: 50px; 
-    list-style: none;
-    padding: 0;
-  }
-  .desktop-menu li { display: flex; align-items: center; }
-  .bottom-nav { display: none !important; }
-  
-  /* Nav Links */
-  .nav-link {
-    text-decoration: none;
-    font-size: 1rem;
-    font-weight: 500;
-    color: #b3b3b3;
-    transition: color 0.3s ease;
-    padding: 10px 0;
-    position: relative;
-  }
-  .nav-link:hover { color: #fff; }
-  .nav-link.active { color: #ffffff; font-weight: 700; }
-  .nav-link.active::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    background-color: var(--accent-color);
-    box-shadow: 0 -2px 10px rgba(229, 9, 20, 0.5);
-  }
-  
-  /* Desktop uses same navbar offset calculation */
-  #home-view {
-    padding-top: 0;
-    min-height: 100vh;
-  }
-  
-  /* Home Grids */
-  .list {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 20px 15px;
-    overflow: visible;
-    padding-bottom: 20px;
-    padding-right: 0;
-  }
-  .list .movie-card { width: 100%; min-width: 0; }
-  
-/* Desktop Grid - 9 columns */
-@media (min-width: 1024px) {
-  #category-grid,
-  #search-results,
-  .explore-grid,
-  .search-modal-v2__results,
-  .recommendations-grid {
-    display: grid;
-    grid-template-columns: repeat(9, 1fr) !important;
-    gap: var(--grid-gap-desktop);
-    width: 100%;
-    padding: var(--grid-padding-desktop) !important;
-    box-sizing: border-box;
-    place-items: start stretch;
-  }
-
-  #category-grid .movie-card,
-  #search-results .movie-card,
-  .explore-grid .movie-card,
-  .search-modal-v2__results .movie-card,
-  .recommendations-grid .movie-card {
-    width: 100% !important;
-    min-width: 0;
-    max-width: none;
-    margin: 0;
-  }
-
-  #category-grid .card-poster,
-  #search-results .card-poster,
-  .explore-grid .card-poster,
-  .search-modal-v2__results .card-poster,
-  .recommendations-grid .card-poster {
-    aspect-ratio: 2/3;
-    width: 100%;
-    height: auto;
-  }
-
-  #category-grid .card-poster img,
-  #search-results .card-poster img,
-  .explore-grid .card-poster img,
-  .search-modal-v2__results .card-poster img,
-  .recommendations-grid .card-poster img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-}
-  
-/* Live View Desktop - Fixed to Bottom (No Gaps) */
-  #live-view {
-    position: fixed !important;
-    top: 70px !important;
-    bottom: 0 !important;
-    left: 0;
-    right: 0;
-    width: 100%;
-    height: auto !important;
-    flex-direction: row;
-    overflow: hidden;
-    z-index: 5000;
-    background: #000;
-  }
-
-  .live-player-container {
-    width: 70%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #000;
-    position: relative;
-    aspect-ratio: auto;
-  }
-  #playerWrapper {
-    width: 100%;
-    height: 100%;
-    aspect-ratio: auto;
-    max-height: 100vh;
-  }
-  #video {
-    width: 100%;
-    height: 100%;
-  }
-  .channel-section {
-    width: 30%;
-    height: 100%;
-    overflow-y: auto;
-    background: rgba(15, 15, 15, 0.95);
-    backdrop-filter: blur(20px);
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 20px;
-  }
-  .search-container {
-    width: auto;
-    margin: 0 0 15px 0;
-    padding: 0;
-    flex-shrink: 0;
-    background: transparent;
-  }
-
-  .category-dropdown-btn {
-    display: flex;
-    width: auto;
-    margin: 0 0 15px 0;
-    padding: 12px 15px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: #eee;
-    font-size: 0.9rem;
-    cursor: pointer;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-    transition: all 0.2s ease;
-  }
-  .category-dropdown-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: translateY(-1px);
-  }
-  .channel-list-wrapper {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0;
-  }
-  .channel-list-wrapper::-webkit-scrollbar { width: 6px; }
-  .channel-list-wrapper::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 10px;
-  }
-  .channel-list {
-    padding-bottom: 20px;
-  }
-  
-  /* Detail View Desktop */
-  .detail-backdrop-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 70vh;
-  }
-  .detail-content-wrapper { 
-    padding-top: 200px; 
-    padding-left: 40px;
-    padding-right: 40px;
-  }
-  .detail-hero-layout {
-    flex-direction: row;
-    align-items: flex-end;
-    text-align: left;
-    gap: 40px;
-    margin-top: 0;
-  }
-  .detail-poster-card {
-    margin-top: 0;
-    width: 300px;
-  }
-  .detail-info-box { 
-    align-items: flex-start; 
-    text-align: left;
-  }
-  .detail-meta-row, .genre-pills-row { 
-    justify-content: flex-start; 
-  }
-  #detail-title { font-size: 3.5rem; }
-  #detail-overview { 
-    text-align: left; 
-    font-size: 1.1rem;
-  }
-  .close-detail-btn {
-    top: 25px;
-    right: 25px;
-  }
-  
-  /* Player Desktop Layout */
-  .player-layout {
-    flex-direction: row;
-    overflow: hidden;
-    height: 100%;
-    width: 100%;
-  }
-  .video-section {
-    flex: 1;
-    height: 100%;
-    aspect-ratio: auto;
-  }
-  .video-section iframe,
-  .iframe-wrapper {
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-  }
-  .sidebar-section {
-    width: var(--player-sidebar-width);
-    min-width: var(--player-sidebar-width);
-    max-width: var(--player-sidebar-width);
-    height: 100%;
-    overflow-y: auto;
-    border-left: 1px solid rgba(255,255,255,0.1);
-    border-top: none;
-    background: #121212;
-  }
-  .player-page-view { overflow: hidden; }
-  .sidebar-content {
-    padding: 25px;
-  }
-  
-  /* Explore Desktop */
-  .explore-grid { 
-    grid-template-columns: repeat(9, 1fr);
-    gap: 25px; 
-    padding: 30px 40px; 
-  }
-  .explore-header-wrapper {
-    padding: 20px 40px;
-    position: relative;
-  }
-  
-  /* Recommendations Grid */
-  .recommendations-grid,
-  .landscape-grid {
-    grid-template-columns: repeat(9, 1fr);
-    gap: 25px;
-    padding: 30px 40px 50px 40px;
-  }
-  
-  /* Search Modal V2 Desktop */
-  .search-modal-v2__header,
-  .explore-filters-container,
-  .results-container {
-    max-width: 1600px;
-    padding: 0 40px;
-  }
-  .search-modal-v2__results {
-    grid-template-columns: repeat(9, 1fr);
-    max-width: 1600px;
-    padding: 24px 40px 50px;
-  }
-  .search-modal-v2__back-btn { display: none; }
-  .filter-row { margin: 0; padding: 5px 0; }
-  
-  /* Search Modal Results */
-  .search-modal-v2__results {
-    grid-template-columns: repeat(9, 1fr);
-    gap: 16px;
-    padding: 24px 40px 50px;
-    max-width: 1600px;
-  }
-  .search-modal-v2__results .movie-card {
-    max-width: none;
-  }
-  .search-modal-v2__results .card-poster {
-    border-radius: 6px;
-  }
-  .search-modal-v2__results .badge-overlay,
-  .search-modal-v2__results .rating-badge {
-    font-size: 0.6rem;
-    padding: 2px 5px;
-  }
-  .search-modal-v2__results .rating-badge i {
-    font-size: 0.55rem;
-  }
-  .search-modal-v2__results .card-title {
-    font-size: 0.8rem;
-  }
-  
-  /* Desktop Category Pills */
-  .category-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    padding: 0 0 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    width: 100%;
-  }
-
-  .category-button {
-    background: rgba(255, 255, 255, 0.06);
-    color: #b0b0b0;
-    border: 1px solid transparent;
-    border-radius: 20px;
-    padding: 8px 16px;
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 0.85rem;
-    transition: all 0.3s ease;
-    font-family: 'Outfit', sans-serif;
-    white-space: nowrap;
-    flex: 0 0 auto;
-    line-height: 1.3;
-    text-transform: none;
-  }
-
-  .category-button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-  }
-
-  .category-button.active {
-    background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-    color: white;
-    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
-    border-color: transparent;
-    font-weight: 600;
-  }
-
-  .category-dropdown-btn {
-    display: none;
-  }
-  
-  /* Extended Detail Backdrop */
-  .detail-backdrop-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 120vh;
-    z-index: 0;
-  }
-
-  #detail-backdrop-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center top;
-    opacity: 0.45;
-    mask-image: linear-gradient(to bottom, black 88%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 88%, transparent 100%);
-  }
-
-  .detail-overlay-gradient {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to top,
-      #141414 0%,
-      #141414 15%,
-      transparent 40%
-    );
-  }
-
-  .detail-content-wrapper {
-    position: relative;
-    z-index: 10;
-    padding-top: 160px;
-  }
-  
-  .recommendations-section {
-    position: relative;
-    z-index: 10;
-    background: #141414;
-    margin-top: 20px;
-  }
-  
-  /* Desktop Page Views */
-  #category-view,
-  #explore-view,
-  .search-modal,
-  #info-modal {
-    padding-top: 0;
-  }
-  
-  .category-header {
-    padding: 25px 40px;
-  }
-  
-  .category-content {
-    padding: 25px 40px;
-    padding-bottom: 40px;
-  }
-  
-  .search-header-row {
-    padding: 25px 40px;
-  }
-  
-  #search-results {
-    padding: 0 40px;
-    padding-bottom: 40px;
-    grid-template-columns: repeat(9, 1fr);
-  }
-  
-  .info-header {
-    padding: 25px 40px;
-  }
-  
-  .info-body {
-    padding: 25px 40px;
-    padding-bottom: 40px;
-  }
-}
-
-/* --- Large Desktop (1400px and up) --- */
-@media (min-width: 1400px) {
-  :root {
-    --player-sidebar-width: 420px;
-  }
-  .slider-viewport { max-height: 650px; }
-  #search-results, #category-grid {
-    grid-template-columns: repeat(9, 1fr);
-    gap: 30px;
-  }
-  .search-modal-v2__results {
-    grid-template-columns: repeat(9, 1fr);
-    gap: 20px;
-    padding: 30px 60px 50px;
-    max-width: 1800px;
-  }
-  .search-modal-v2__heading {
-    font-size: 1.1rem;
-    margin: 15px 0 20px 5px;
-  }
-  
-  /* Large Desktop Live TV */
-  #live-view {
-    height: var(--content-height);
-  }
-
-  .live-player-container {
-    width: 70%;
-  }
-
-  .channel-section {
-    width: 30%;
-    padding: 24px;
-  }
-
-  .channel-button {
-    min-height: 76px;
-    height: 76px;
-  }
-
-  .channel-logo {
-    width: 48px;
-    height: 48px;
-  }
-
-  .channel-name {
-    font-size: 1rem;
-  }
-}
-
-/* --- Touch Devices --- */
-@media (hover: none) {
-  .slider-arrow:hover {
-    background: rgba(0, 0, 0, 0.5);
-    color: #fff;
-    transform: translateY(-50%);
-  }
-}
-
-/* --- TV/Smart TV Specific --- */
-@media (hover: hover) and (pointer: coarse) {
-  .slider-arrow:hover {
-    background: #fff;
-    color: #000;
-    transform: translateY(-50%) scale(1.1);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-  }
-}
-
-/* ========================================================
-   18. SEARCH MODAL V2 (Page Layout)
+   19. SEARCH MODAL V2
    ======================================================== */
 .search-modal-v2 {
   display: none;
@@ -4320,9 +2985,7 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
   overflow: hidden;
 }
 
-.search-modal-v2.active {
-  display: flex;
-}
+.search-modal-v2.active { display: flex; }
 
 .search-modal-v2__header {
   display: flex;
@@ -4398,9 +3061,7 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
   box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
-.search-modal-v2__input::placeholder {
-  color: #666;
-}
+.search-modal-v2__input::placeholder { color: #666; }
 
 .search-modal-v2__clear-btn {
   position: absolute;
@@ -4428,9 +3089,7 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
   padding-bottom: 4px;
 }
 
-.search-modal-v2__type-pills::-webkit-scrollbar {
-  display: none;
-}
+.search-modal-v2__type-pills::-webkit-scrollbar { display: none; }
 
 .search-modal-v2__secondary-filters {
   display: flex;
@@ -4448,9 +3107,7 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
   padding-bottom: 4px;
 }
 
-.search-modal-v2__filter-row::-webkit-scrollbar {
-  display: none;
-}
+.search-modal-v2__filter-row::-webkit-scrollbar { display: none; }
 
 .search-modal-v2__pill {
   padding: 10px 20px;
@@ -4513,20 +3170,7 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
   align-content: start;
   width: 100%;
   box-sizing: border-box;
-}
-
-/* Tablet: 6 columns */
-@media (min-width: 768px) {
-  .search-modal-v2__results {
-    grid-template-columns: repeat(6, 1fr);
-  }
-}
-
-/* Desktop: 9 columns */
-@media (min-width: 1024px) {
-  .search-modal-v2__results {
-    grid-template-columns: repeat(9, 1fr);
-  }
+  overscroll-behavior-y: contain;
 }
 
 .search-modal-v2__results .movie-card {
@@ -4562,7 +3206,7 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 }
 
 /* ========================================================
-   19. CATEGORY MODAL
+   20. CATEGORY MODAL
    ======================================================== */
 #categoryModal {
   position: fixed;
@@ -4575,77 +3219,6 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
   display: none;
   justify-content: center;
   align-items: center;
-}
-
-/* --- Missing Styles for Modal Content --- */
-
-/* Title Style inside Modal */
-#categoryModal h2 {
-  font-size: 1.2rem;
-  margin-bottom: 15px;
-  color: #fff;
-  text-align: center;
-  font-weight: 700;
-  border-bottom: 1px solid #333;
-  padding-bottom: 10px;
-}
-
-/* Close "X" Button Position */
-.close-button {
-  position: absolute;
-  top: 15px;
-  right: 20px;
-  color: #999;
-  font-size: 1.5rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  z-index: 10;
-}
-
-.close-button:hover {
-  color: #fff;
-}
-
-/* The List Container */
-.mobile-category-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Individual Category Option Buttons */
-.mobile-cat-option {
-  padding: 12px 15px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: #ccc;
-}
-
-.mobile-cat-option:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-}
-
-/* Active State (Selected Category) */
-.mobile-cat-option.active {
-  background: var(--accent-color);
-  color: #fff;
-  border-color: var(--accent-color);
-  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
-  font-weight: 700;
-}
-
-.mobile-cat-option:active { 
-  transform: scale(0.98); 
 }
 
 #categoryModal.active {
@@ -4667,6 +3240,69 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
   margin: auto;
 }
 
+#categoryModal h2 {
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  color: #fff;
+  text-align: center;
+  font-weight: 700;
+  border-bottom: 1px solid #333;
+  padding-bottom: 10px;
+}
+
+.close-button {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  color: #999;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.close-button:hover { color: #fff; }
+
+.mobile-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto !important;
+  padding-bottom: 10px !important;
+  flex: 1 !important;
+}
+
+.mobile-cat-option {
+  padding: 12px 15px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #ccc;
+}
+
+.mobile-cat-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.mobile-cat-option.active {
+  background: var(--accent-color);
+  color: #fff;
+  border-color: var(--accent-color);
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+  font-weight: 700;
+}
+
+.mobile-cat-option:active { transform: scale(0.98); }
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -4681,20 +3317,116 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
   z-index: 999999;
 }
 
-/* ========================================================
-   20. UTILITY CLASSES
-   ======================================================== */
-
-/* Page view visibility management */
-body:has(.page-view.active) {
-  overflow: hidden;
+/* Live View Category Modal Fix */
+#live-view .modal-overlay.active {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  z-index: 999999 !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
 }
 
-body:has(.page-view.active) .bottom-nav {
+#live-view .modal-content.category-modal-content {
+  margin: auto !important;
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  transform: translateY(-50px) !important;
+  width: 100% !important;
+  max-width: 400px !important;
+  max-height: 80% !important;
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: 0 15px 50px rgba(0,0,0,0.8) !important;
+}
+
+
+
+/* ========================================================
+   21. ANIMATIONS
+   ======================================================== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes viewSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* View Transitions */
+#detail-view.active,
+#category-view.active,
+#explore-view.active,
+#live-view,
+.player-page-view.active,
+#info-modal.active {
+  animation: viewSlideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
+  transform-origin: center bottom;
+  will-change: transform, opacity;
+}
+
+#detail-view, 
+#category-view, 
+#explore-view, 
+.player-page-view,
+#info-modal {
+  opacity: 0;
   display: none;
 }
 
-/* Loading Spinner Fix */
+.modal-overlay.active {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* ========================================================
+   22. UTILITY CLASSES
+   ======================================================== */
+body:has(.page-view.active) { overflow: hidden; }
+body:has(.page-view.active) .bottom-nav { display: none; }
+
+body:has(#info-modal.active),
+body:has(#categoryModal.active),
+body:has(.search-modal-v2.active) {
+  overflow: hidden !important;
+  overscroll-behavior-y: none !important;
+}
+
+/* Loading Spinner */
 .explore-grid,
 #category-grid,
 #search-results,
@@ -4737,26 +3469,20 @@ body:has(.page-view.active) .bottom-nav {
   min-height: 60px;
 }
 
-@media (max-width: 1023px) {
-  
-  
-  .spinner-fixed-bottom {
-    position: fixed;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 35000;
-    background: rgba(5, 5, 5, 0.9);
-    padding: 10px;
-    border-radius: 50%;
-    border: 1px solid var(--glass-border);
-  }
+.spinner-fixed-bottom {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 35000;
+  background: rgba(5, 5, 5, 0.9);
+  padding: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
 }
 
-/* Fullscreen Video Fix */
-:fullscreen, ::backdrop {
-  background-color: #000;
-}
+/* Fullscreen Video */
+:fullscreen, ::backdrop { background-color: #000; }
 
 :-webkit-full-screen {
   width: 100%;
@@ -4769,9 +3495,7 @@ body:has(.page-view.active) .bottom-nav {
 :fullscreen .channel-section,
 :fullscreen .search-container,
 :fullscreen .category-dropdown-btn,
-:fullscreen .channel-count-display {
-  display: none;
-}
+:fullscreen .channel-count-display { display: none; }
 
 :fullscreen .live-player-container {
   width: 100%;
@@ -4779,32 +3503,10 @@ body:has(.page-view.active) .bottom-nav {
   max-height: none;
 }
 
-/* Hide elements when page views are active */
-body:has(#detail-view.active) .navbar,
-body:has(#category-view.active) .navbar,
-body:has(#live-view.active) .navbar,
-body:has(#explore-view.active) .navbar,
-body:has(.player-page-view.active) .navbar,
-body:has(.search-modal.active) .navbar,
-body:has(#info-modal.active) .navbar {
-  /* Navbar stays visible, just ensure z-index is proper */
-  z-index: 200000;
-}
-
-/* Ensure proper stacking - FIXED */
-/* We removed #detail-view, #category-view, etc. from here 
-   because their specific Z-Index values (60000, 55000) 
-   defined earlier must take precedence. */
-
-#live-view.active,
-#explore-view.active {
-  z-index: 5000;
-}
-
-/* Back to top button */
+/* Back to Top Button */
 .back-to-top {
   position: fixed;
-  bottom: 30px;
+  bottom: 85px;
   right: 30px;
   width: 50px;
   height: 50px;
@@ -4815,7 +3517,7 @@ body:has(#info-modal.active) .navbar {
   font-size: 1.2rem;
   cursor: pointer;
   box-shadow: 0 4px 15px rgba(168, 85, 247, 0.5);
-  z-index: 40000;
+  z-index: 999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4837,346 +3539,422 @@ body:has(#info-modal.active) .navbar {
   transform: translateY(-5px);
 }
 
+/* View Z-Index Management */
+#category-view.active { z-index: 55000 !important; }
+#detail-view.active { z-index: 60000 !important; }
+.player-page-view.active, .player-page-view { z-index: 70000 !important; }
+#live-view.active, #explore-view.active { z-index: 5000; }
+
+/* Hide Player Back Button (use logo instead) */
+.player-page-view .close-player-btn { display: none; }
+
+/* ========================================================
+   23. SYSTEM TOAST (Solo Leveling Glitch Edition)
+   ======================================================== */
+.shakzz-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  padding: 18px 35px;
+  border-radius: 4px;
+  border: 1px solid var(--accent-color);
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.4), inset 0 0 10px rgba(168, 85, 247, 0.2);
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  z-index: 9999999;
+  opacity: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  white-space: nowrap;
+}
+
+.shakzz-toast.show {
+  animation: systemGlitch 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+.shakzz-toast.success { 
+  border-color: #3b82f6; 
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.5), inset 0 0 10px rgba(59, 130, 246, 0.2);
+}
+.shakzz-toast.success span { color: #3b82f6; text-shadow: 0 0 10px #3b82f6; }
+
+.shakzz-toast.error { 
+  border-color: #ef4444; 
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.5), inset 0 0 10px rgba(239, 68, 68, 0.2);
+}
+.shakzz-toast.error span { color: #ef4444; text-shadow: 0 0 10px #ef4444; }
+
+@keyframes systemGlitch {
+  0% { 
+    opacity: 0; 
+    transform: translate(-50%, -50%) scale(0.9) skewX(10deg); 
+    filter: drop-shadow(5px 0 0 var(--accent-color)) drop-shadow(-5px 0 0 #0ff);
+  }
+  15% { 
+    opacity: 1; 
+    transform: translate(-52%, -48%) scale(1.05) skewX(-15deg); 
+    filter: drop-shadow(-5px 0 0 var(--accent-color)) drop-shadow(5px 0 0 #0ff);
+  }
+  30% { 
+    transform: translate(-48%, -51%) scale(1) skewX(5deg); 
+    filter: drop-shadow(2px 0 0 var(--accent-color));
+  }
+  45% { 
+    transform: translate(-51%, -49%) skewX(-2deg); 
+    filter: none;
+  }
+  60% { 
+    transform: translate(-50%, -50%) skewX(0); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: translate(-50%, -50%) scale(1); 
+  }
+}
+
+/* ========================================================
+   24. ANDROID TV HIGHLIGHT STYLES
+   ======================================================== */
+.tv-focused {
+  outline: 3px solid #a855f7 !important;
+  outline-offset: 2px;
+  transform: scale(1.05);
+  transition: all 0.2s ease-in-out;
+  z-index: 9999;
+}
+
+/* ========================================================
+   25. RESPONSIVE MEDIA QUERIES - CLOUDSTREAM MAXIMIZED EDITION
+   ======================================================== */
+
+/* --- Base/Mobile (default): 3 columns, minimal gaps --- */
+#category-grid,
+#search-results,
+.explore-grid,
+.search-modal-v2__results,
+.recommendations-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 8px;
+  padding: 8px !important;
+  width: 100%;
+  box-sizing: border-box;
+  place-items: start stretch;
+}
+
+#category-grid .movie-card,
+#search-results .movie-card,
+.explore-grid .movie-card,
+.search-modal-v2__results .movie-card,
+.recommendations-grid .movie-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0;
+}
+
+#category-grid .card-poster,
+#search-results .card-poster,
+.explore-grid .card-poster,
+.search-modal-v2__results .card-poster,
+.recommendations-grid .card-poster {
+  width: 100%;
+  aspect-ratio: 2/3;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+#category-grid .card-poster img,
+#search-results .card-poster img,
+.explore-grid .card-poster img,
+.search-modal-v2__results .card-poster img,
+.recommendations-grid .card-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* --- Small Mobile (360px-479px): 3 columns, tighter --- */
+@media (min-width: 360px) and (max-width: 479px) {
+  #category-grid,
+  #search-results,
+  .explore-grid,
+  .search-modal-v2__results,
+  .recommendations-grid {
+    gap: 10px;
+    padding: 10px !important;
+  }
+}
+
+/* --- Small Mobile (480px-599px): 4 columns --- */
+@media (min-width: 480px) and (max-width: 599px) {
+  #category-grid,
+  #search-results,
+  .explore-grid,
+  .search-modal-v2__results,
+  .recommendations-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 10px;
+    padding: 10px !important;
+  }
+  
+  .card-poster {
+    border-radius: 8px;
+  }
+}
+
+/* --- Mobile & Tablet (1023px and below) --- */
+@media (max-width: 1023px) {
+  .navbar { padding: var(--safe-top) 4% 0 4%; }
+  .logo-text { font-size: 18px; }
+
+  .slider-viewport {
+    height: 70vh;
+    max-height: 600px;
+  }
+  .slide-content {
+    bottom: 30px;
+    text-align: center;
+    left: 20px;
+    right: 20px;
+    align-items: center;
+  }
+  .slide-meta, .slide-actions { justify-content: center; }
+  .slide-desc {
+    margin: 0 auto 25px auto;
+    font-size: 0.95rem;
+    max-width: 90%;
+  }
+  .slider-btn {
+    padding: 10px 24px;
+    font-size: 1rem;
+  }
+
+  .movie-card { width: 120px; }
+  .list { gap: 10px; padding-right: 15px; }
+
+  .footer-top {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 50px;
+  }
+  .footer-nav-wrapper {
+    flex-direction: column;
+    gap: 40px;
+    width: 100%;
+    align-items: center;
+  }
+  .footer-col { align-items: center; width: 100%; }
+  .social-row { justify-content: center; width: 100%; }
+  .footer-bottom {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .bottom-nav { display: flex; }
+  .hamburger { display: none; }
+
+  #home-view, #live-view, .category-content {
+    padding-bottom: 0;
+  }
+  .footer { padding-bottom: 90px; }
+
+  .channel-button { padding: 15px 20px; }
+  .channel-logo { width: 50px; height: 50px; }
+  .channel-name { font-size: 1rem; }
+
+  /* Mobile Detail View */
+  .detail-backdrop-layer {
+    position: relative;
+    height: 40vh;
+  }
+  #detail-backdrop-img {
+    height: 100%;
+    object-position: center top;
+  }
+  .detail-content-wrapper { 
+    padding-top: 0; 
+    padding-left: 12px; 
+    padding-right: 12px;
+  }
+  .detail-poster-card {
+    margin-top: -50px;
+    width: 150px;
+  }
+  .close-detail-btn {
+    top: 15px;
+    right: 15px;
+  }
+  .detail-hero-layout {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    margin-top: -40px;
+  }
+  .detail-info-box { 
+    align-items: center; 
+    text-align: center;
+  }
+  .detail-meta-row, .genre-pills-row, .detail-actions { 
+    justify-content: center; 
+  }
+  #detail-title { font-size: 1.8rem; }
+  #detail-overview { 
+    text-align: center; 
+    font-size: 0.95rem;
+  }
+  .detail-actions {
+    max-width: 100%;
+    padding: 0 20px;
+  }
+
+  /* Mobile Live TV */
+  #live-view {
+    display: flex;
+    flex-direction: column;
+    height: var(--content-height);
+    overflow: hidden;
+  }
+
+  .live-player-container {
+    width: 100%;
+    aspect-ratio: 16/9;
+    height: auto;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  #playerWrapper {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 16/9;
+  }
+
+  .channel-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    padding: 12px;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  .search-container,
+  .category-dropdown-btn,
+  .channel-count-display {
+    flex-shrink: 0;
+  }
+
+  .channel-list-wrapper {
+    flex: 1;
+    width: 100%;
+    overflow-y: auto;
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .channel-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: calc(var(--bottom-nav-height) + 20px);
+  }
+
+  .channel-button {
+    min-height: 70px;
+    height: 70px;
+    flex-shrink: 0;
+  }
+
+  /* Mobile Player Layout */
+  .player-layout {
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .video-section {
+    width: 100%;
+    aspect-ratio: 16/9;
+    flex-shrink: 0;
+  }
+
+  .sidebar-section {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .player-page-view .close-player-btn {
+    top: 10px;
+    left: 10px;
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+
+  .sidebar-content {
+    padding: 12px;
+    padding-bottom: calc(var(--bottom-nav-height) + 20px);
+  }
+}
+
+/* --- Mobile Specific (768px and below) --- */
 @media (max-width: 768px) {
+  :root {
+    --header-height: 55px;
+  }
+
   .back-to-top {
     bottom: 80px;
     right: 20px;
     width: 45px;
     height: 45px;
   }
-}
 
-/* Hide back button in player - users use logo instead */
-.player-page-view .close-player-btn {
-  display: none;
-}
-
-/* 1. Base Styles for Positioning (All Views) */
-#detail-view,
-#category-view,
-.player-page-view {
-    position: fixed !important;
-    top: var(--navbar-offset, 70px) !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: var(--content-height, calc(100vh - 70px)) !important;
-    background: var(--bg-color, #050505);
-    /* Note: If your React component returns null when closed, 
-       display: none is redundant but harmless. */
-}
-
-/* 2. Category View Active State (Level 1) */
-#category-view.active {
-    display: flex !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    z-index: 55000 !important; 
-}
-
-/* 3. Detail View Active State (Level 2) */
-#detail-view.active {
-    display: flex !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    z-index: 60000 !important; /* Higher than Category */
-}
-
-/* 4. Player View Active State (Level 3 - HIGHEST) */
-.player-page-view.active,
-.player-page-view {
-    display: flex !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    z-index: 70000 !important; /* Must be higher than Detail View (60000) */
-}
-/* Ensure navbar has solid background on mobile */
-
-#live-view {
-    padding-top: 0 !important; /* Remove extra padding */
-    top: var(--navbar-offset) !important; /* Start exactly below header */
-    height: var(--content-height) !important;
-  }
-  
-  /* Ensure the player sticks to the top of the view */
-  .live-player-container {
-    margin-top: 0 !important;
+  .channel-count-display {
+    width: 100%;
+    padding: 0 12px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
   }
 
-  .category-header {
-  position: relative;
-  padding: 20px 15px;
-  background: #181818;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  flex-shrink: 0;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-#category-title {
-  margin: 0;
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: #fff;
-  text-transform: capitalize;
-  padding-right: 60px;
-}
-
-/* Back Button */
-.category-header i {
-  position: absolute;
-  top: 50%;
-  right: 15px;
-  transform: translateY(-50%) scaleX(-1);
-  width: 45px;
-  height: 45px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition-fast);
-}
-
-.category-header i:hover {
-  background: #fff;
-  color: #000;
-}
-/* Base Category View Container */
-#category-view {
-  display: none;
-  flex-direction: column;
-  width: 100%;
-  height: var(--content-height);
-  background: var(--bg-color);
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-top: 0;
-  position: relative;
-  z-index: 55000;
-}
-
-#category-view.active {
-  display: flex;
-}
-
-/* ========================================================
-   FIX EXPLORE & NAVBAR GAPS
-   ======================================================== */
-
-/* 1. Remove double spacing on Explore Page */
-#explore-view {
-    padding-top: 0 !important; /* Remove internal padding */
-    top: var(--navbar-offset) !important; /* Position strictly below navbar */
-    height: var(--content-height) !important;
-}
-
-/* 2. Ensure Search Bar sticks to the top of the view */
-.explore-header-wrapper {
-    top: 0 !important;
-    position: sticky !important;
-    margin-top: 0 !important;
-    background: rgba(5, 5, 5, 0.98) !important; /* Ensure background isn't transparent */
-}
-
-/* 3. Mobile Specific: Ensure Navbar has no top gap */
-@media (max-width: 768px) {
-    .navbar {
-        top: 0 !important;
-        /* Ensure background is solid on mobile so content doesn't show behind */
-        background: #050505 !important; 
-        border-bottom: 1px solid var(--glass-border) !important;
-    }
-    
-    /* Force Explore Grid to start immediately */
-    .explore-grid {
-        padding-top: 15px !important;
-    }
-}
-/* ========================================================
-   FIX FOOTER TEXT ON IPAD/TABLET
-   ======================================================== */
-@media (min-width: 768px) and (max-width: 1023px) {
-  /* 1. Center the Big Text */
-  .footer-big-text {
-    text-align: center !important;
-    margin: 20px auto 0 auto !important;
-    width: 100% !important;
-    display: block !important;
-  }
-
-  /* 2. Center the Description Text (optional, for better balance) */
   .footer-desc {
-    text-align: center !important;
-    margin: 0 auto 30px auto !important;
-    max-width: 80% !important;
+    text-align: center;
+    margin: 0 auto;
+    max-width: 90%;
+  }
+  .footer-big-text {
+    font-size: clamp(2.5rem, 12vw, 3.5rem);
+    text-align: center;
+    margin: 20px auto 0 auto;
+    width: 100%;
+    display: block;
+  }
+  .footer { padding-bottom: 30px; }
+  body:has(.bottom-nav) .footer {
+    padding-bottom: 90px;
   }
 
-  /* 3. Ensure the top row flexes correctly */
-  .footer-top {
-    justify-content: center !important;
-    text-align: center !important;
-  }
-}
-
-/* ========================================================
-   FIX INFO MODAL POSITIONING (Stuck at Bottom Fix)
-   ======================================================== */
-
-#info-modal {
-    display: flex !important;
-    flex-direction: column !important;
-    position: fixed !important; /* Force fixed to screen */
-    top: var(--navbar-offset, 70px) !important; /* Stick to top (below nav) */
-    left: 0 !important;
-    width: 100vw !important;
-    height: var(--content-height, calc(100vh - 70px)) !important; /* Full height */
-    background-color: var(--bg-color, #050505) !important; /* Solid Black Background */
-    z-index: 60000 !important; /* Above everything */
-    padding: 0 !important;
-    margin: 0 !important;
-    bottom: auto !important; /* Stop it from sticking to bottom */
-}
-
-/* Ensure the wrapper fills the modal */
-.info-content-wrapper {
-    width: 100% !important;
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important; /* Force content to start at top */
-}
-
-/* Header Styling */
-.info-header {
-    flex-shrink: 0 !important;
-    background: #050505 !important;
-    padding: 20px !important;
-    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-}
-
-/* Body Scrolling */
-.info-body {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    padding: 20px !important;
-    padding-bottom: 120px !important; /* Space for bottom nav */
-    width: 100% !important;
-    box-sizing: border-box !important;
-}
-
-/* ========================================================
-   VIEW TRANSITIONS & ANIMATIONS
-   ======================================================== */
-
-/* 1. Define the Slide-Up Animation */
-@keyframes viewSlideUp {
-    0% {
-        opacity: 0;
-        transform: translateY(30px) scale(0.98);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-/* 2. Apply Animation to All Active Views */
-#detail-view.active,
-#category-view.active,
-#explore-view.active,
-#live-view, /* Live View is always active when mounted */
-.player-page-view.active,
-#info-modal.active {
-    animation: viewSlideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
-    transform-origin: center bottom;
-    will-change: transform, opacity;
-}
-
-/* 3. Special Case: Ensure they start hidden if not active */
-#detail-view, 
-#category-view, 
-#explore-view, 
-.player-page-view,
-#info-modal {
-    opacity: 0; /* Hidden by default so they can fade in */
-    display: none; 
-}
-
-/* 4. Improve Modal Backdrop Fade (for Info/Category) */
-.modal-overlay.active {
-    animation: fadeIn 0.3s ease-out forwards;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-/* ========================================================
-   NAVBAR - FIXED: Remove visible line/seam
-   ======================================================== */
-
-/* Base Navbar - Extended gradient to eliminate visible line */
-.navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: var(--navbar-offset);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--safe-top) 4% 0 4%;
-  z-index: 200000;
-  /* Extended gradient that fades more gradually - no hard line */
-  background: linear-gradient(to bottom, 
-    rgba(5, 5, 5, 1) 0%, 
-    rgba(5, 5, 5, 0.95) 20%,
-    rgba(5, 5, 5, 0.85) 40%, 
-    rgba(5, 5, 5, 0.6) 60%,
-    rgba(5, 5, 5, 0.3) 80%,
-    rgba(5, 5, 5, 0) 100%
-  );
-  transition: background 0.3s ease, backdrop-filter 0.3s ease;
-  /* Ensure no border or shadow that could create a line */
-  border: none !important;
-  border-bottom: none !important;
-  box-shadow: none;
-}
-
-/* Solid background when scrolled */
-.navbar.solid-nav,
-.navbar.scrolled {
-  background: rgba(5, 5, 5, 0.98) !important;
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--glass-border) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
-}
-
-/* ========================================================
-   MOBILE SPECIFIC - FIXED (max-width: 768px)
-   ======================================================== */
-
-@media (max-width: 768px) {
-  :root {
-    --header-height: 55px;
-  }
-  
-  /* Mobile navbar - extended gradient to cover more area */
+  /* Mobile Navbar */
   .navbar {
-    padding: var(--safe-top) 5% 0 5%;
+    padding: var(--safe-top) 4% 0 4%;
     height: var(--navbar-offset);
     align-items: center;
-    /* Extended gradient - goes further down before becoming transparent */
     background: linear-gradient(to bottom, 
       rgba(5, 5, 5, 1) 0%, 
       rgba(5, 5, 5, 0.98) 15%,
@@ -5191,190 +3969,1178 @@ body:has(#info-modal.active) .navbar {
     z-index: 200000;
     transition: background 0.3s ease, backdrop-filter 0.3s ease;
   }
-  
-  /* Solid background when scrolled */
+
   .navbar.scrolled,
   .navbar.solid-nav {
     background: rgba(5, 5, 5, 0.98) !important;
     backdrop-filter: blur(10px) !important;
     border-bottom: 1px solid var(--glass-border) !important;
   }
-  
+
   .logo-text { font-size: 1.2rem; }
   .nav-avatar { width: 32px; height: 32px; }
+
+  /* Home View */
+  #home-view { padding-top: 0; }
+
+  /* All page views use consistent navbar offset */
+  #explore-view,
+  #category-view,
+  .search-modal,
+  #info-modal,
+  #live-view,
+  .player-page-view {
+    top: var(--navbar-offset);
+    height: var(--content-height);
+  }
+
+  /* Detail Back Button */
+  .close-detail-btn {
+    top: 15px;
+    right: 15px;
+    z-index: 200001;
+  }
+
+  /* Mobile Detail View Fixes */
+  .detail-backdrop-layer {
+    height: 55vh;
+    min-height: 350px;
+    max-height: 550px;
+  }
+
+  #detail-backdrop-img {
+    object-position: center top;
+    mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+  }
+
+  .detail-content-wrapper {
+    margin-top: -150px;
+    padding: calc(var(--navbar-offset) + 10px) 12px 30px 12px;
+  }
+
+  .detail-hero-layout {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 25px;
+    margin-bottom: 30px;
+  }
+
+  .detail-poster-card {
+    width: 160px;
+    margin: 0 auto;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.9);
+  }
+
+  .detail-info-box {
+    align-items: center;
+    text-align: center;
+    width: 100%;
+  }
+
+  #detail-title {
+    font-size: 1.8rem;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+
+  .detail-meta-row {
+    justify-content: center;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+  }
+
+  .genre-pills-row {
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .genre-pill {
+    font-size: 0.8rem;
+    padding: 5px 12px;
+  }
+
+  #detail-overview {
+    text-align: center;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 25px;
+    max-width: 100%;
+  }
+
+  .detail-actions {
+    max-width: 100%;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .play-btn-primary,
+  .watchlist-btn {
+    padding: 12px 20px;
+    font-size: 1rem;
+  }
+
+  /* Mobile Recommendations Full Width */
+  .recommendations-section {
+    width: 100%;
+    margin: 30px 0 0 0;
+    padding: 30px 0 80px 0;
+    background: #141414;
+    position: relative;
+    z-index: 10;
+  }
+
+  .recommendations-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+    justify-content: flex-start;
+    padding: 0 12px;
+  }
+
+  .recommendations-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 0 8px;
+  }
 }
 
-/* ========================================================
-   SYSTEM PROMPT TOAST (Solo Leveling Glitch Edition)
-   ======================================================== */
-.shakzz-toast {
-    position: fixed;
-    /* Center exactly in the middle of the screen */
-    top: 50%;
-    left: 50%;
-    /* Start slightly scaled down for the pop-in */
-    transform: translate(-50%, -50%) scale(0.9);
-    
-    background: rgba(10, 10, 10, 0.95);
-    backdrop-filter: blur(10px);
-    color: #fff;
-    padding: 18px 35px;
-    
-    /* System windows have sharp edges, not rounded */
-    border-radius: 4px;
-    border: 1px solid var(--accent-color);
-    box-shadow: 0 0 25px rgba(168, 85, 247, 0.4), inset 0 0 10px rgba(168, 85, 247, 0.2);
-    
-    font-weight: 700;
-    font-size: 1.1rem;
-    letter-spacing: 1px;
+/* --- Tablet (600px-767px): 4 columns --- */
+@media (min-width: 600px) and (max-width: 767px) {
+  #category-grid,
+  #search-results,
+  .explore-grid,
+  .search-modal-v2__results,
+  .recommendations-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 12px;
+    padding: 12px !important;
+  }
+  
+  .card-poster {
+    border-radius: 8px;
+  }
+}
+
+/* --- Tablet (768px-1023px): 5 columns --- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Tablet Grid - 5 columns for maximum size */
+  #category-grid,
+  #search-results,
+  .explore-grid,
+  .search-modal-v2__results,
+  .recommendations-grid {
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 14px;
+    padding: 14px !important;
+    place-items: start stretch;
+  }
+
+  .card-poster {
+    border-radius: 10px;
+  }
+
+  .search-modal-v2__results {
+    gap: 14px;
+    padding: 16px 20px;
+  }
+  
+  .explore-grid {
+    gap: 16px;
+    padding: 20px 24px;
+  }
+
+  .channel-count-display {
+    width: 100%;
+    margin: 0;
+    padding: 12px 20px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #111;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #aaa;
     text-transform: uppercase;
-    z-index: 9999999;
-    opacity: 0;
-    pointer-events: none;
+  }
+  
+  .channel-count-display > span:last-child,
+  .channel-count-display > div:last-child {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent-color);
+  }
+
+  /* Tablet Live TV */
+  .live-player-container {
+    max-height: 50vh;
+    min-height: 280px;
+  }
+
+  #playerWrapper, #video {
+    max-height: 50vh;
+  }
+
+  .channel-section {
+    padding: 14px;
+    padding-bottom: calc(var(--bottom-nav-height) + 20px) !important;
+  }
+
+  .search-container input,
+  .category-dropdown-btn {
+    height: 48px;
+    font-size: 0.95rem;
+  }
+
+  .channel-button {
+    min-height: 72px;
+    height: 72px;
+    padding: 12px 16px;
+  }
+
+  .channel-logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .channel-name {
+    font-size: 0.95rem;
+  }
+
+  /* Tablet Detail View */
+  .detail-backdrop-layer {
+    height: 45vh;
+  }
+  
+  .detail-poster-card {
+    width: 180px;
+  }
+  
+  #detail-title {
+    font-size: 2.2rem;
+  }
+
+  /* Tablet Footer Fix */
+  .footer-big-text {
+    text-align: center !important;
+    margin: 20px auto 0 auto !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .footer-desc {
+    text-align: center !important;
+    margin: 0 auto 30px auto !important;
+    max-width: 80% !important;
+  }
+
+  .footer-top {
+    justify-content: center !important;
+    text-align: center !important;
+  }
+}
+
+/* --- Desktop (1024px-1399px): 6 columns, maximized --- */
+@media (min-width: 1024px) and (max-width: 1399px) {
+  /* Navigation */
+  .hamburger { display: none; }
+  .desktop-menu { 
+    display: flex; 
+    align-items: center; 
+    gap: 30px; 
+    margin-left: 50px; 
+    list-style: none;
+    padding: 0;
+  }
+  .desktop-menu li { display: flex; align-items: center; }
+  .bottom-nav { display: none !important; }
+
+  /* Nav Links */
+  .nav-link {
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #b3b3b3;
+    transition: color 0.3s ease;
+    padding: 10px 0;
+    position: relative;
+  }
+  
+  .nav-link:hover { color: #fff; }
+  .nav-link.active { color: #ffffff; font-weight: 700; }
+  
+  .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--accent-color);
+    box-shadow: 0 -2px 10px rgba(229, 9, 20, 0.5);
+  }
+
+  /* Home */
+  #home-view {
+    padding-top: 0;
+    min-height: 100vh;
+  }
+
+  /* Home Horizontal Lists (Keep as flex for scrolling rows) */
+  .list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 16px;
+    padding-bottom: 20px;
+    padding-right: 40px;
+    scrollbar-width: none;
+  }
+  
+  .list::-webkit-scrollbar { display: none; }
+  
+  .list .movie-card { 
+    width: 200px; 
+    flex: 0 0 auto;
+    min-width: 0; 
+  }
+
+  /* Desktop Grid - 6 columns, minimal gaps for max size */
+  #category-grid,
+  #search-results,
+  .explore-grid,
+  .search-modal-v2__results,
+  .recommendations-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 16px;
+    width: 100%;
+    padding: 16px 24px !important;
+    box-sizing: border-box;
+    place-items: start stretch;
+  }
+
+  #category-grid .movie-card,
+  #search-results .movie-card,
+  .explore-grid .movie-card,
+  .search-modal-v2__results .movie-card,
+  .recommendations-grid .movie-card {
+    width: 100% !important;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+  }
+
+  #category-grid .card-poster,
+  #search-results .card-poster,
+  .explore-grid .card-poster,
+  .search-modal-v2__results .card-poster,
+  .recommendations-grid .card-poster {
+    aspect-ratio: 2/3;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+  }
+
+  #category-grid .card-poster img,
+  #search-results .card-poster img,
+  .explore-grid .card-poster img,
+  .search-modal-v2__results .card-poster img,
+  .recommendations-grid .card-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Live View Desktop */
+  #live-view {
+    position: fixed !important;
+    top: 70px !important;
+    bottom: 0 !important;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto !important;
+    flex-direction: row;
+    overflow: hidden;
+    z-index: 5000;
+    background: #000;
+  }
+
+  .live-player-container {
+    width: 70%;
+    height: 100%;
     display: flex;
     align-items: center;
-    gap: 15px;
-    white-space: nowrap;
-}
+    justify-content: center;
+    background: #000;
+    position: relative;
+    aspect-ratio: auto;
+  }
+  
+  #playerWrapper {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    max-height: 100vh;
+  }
+  
+  #video {
+    width: 100%;
+    height: 100%;
+  }
+  
+  .channel-section {
+    width: 30%;
+    height: 100%;
+    overflow-y: auto;
+    background: rgba(15, 15, 15, 0.95);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 16px;
+  }
+  
+  .search-container {
+    width: auto;
+    margin: 0 0 15px 0;
+    padding: 0;
+    flex-shrink: 0;
+    background: transparent;
+  }
 
-/* The Glitch Animation Trigger */
-.shakzz-toast.show {
-    animation: systemGlitch 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-}
+  .category-dropdown-btn {
+    display: flex;
+    width: auto;
+    margin: 0 0 15px 0;
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #eee;
+    font-size: 0.9rem;
+    cursor: pointer;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+  }
+  
+  .category-dropdown-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+  }
+  
+  .channel-list-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+  
+  .channel-list-wrapper::-webkit-scrollbar { width: 6px; }
+  .channel-list-wrapper::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 10px;
+  }
+  
+  .channel-list {
+    padding-bottom: 20px;
+  }
 
-/* --- SYSTEM SUCCESS (Blue Glow like SL System) --- */
-.shakzz-toast.success { 
-    border-color: #3b82f6; 
-    box-shadow: 0 0 25px rgba(59, 130, 246, 0.5), inset 0 0 10px rgba(59, 130, 246, 0.2);
-}
-.shakzz-toast.success span { color: #3b82f6; text-shadow: 0 0 10px #3b82f6; }
+  /* Detail View Desktop */
+  .detail-backdrop-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 70vh;
+    max-height: 800px;
+  }
 
-/* --- SYSTEM ERROR (Red Glow) --- */
-.shakzz-toast.error { 
-    border-color: #ef4444; 
-    box-shadow: 0 0 25px rgba(239, 68, 68, 0.5), inset 0 0 10px rgba(239, 68, 68, 0.2);
-}
-.shakzz-toast.error span { color: #ef4444; text-shadow: 0 0 10px #ef4444; }
+  #detail-backdrop-img {
+    object-position: center 15%;
+    mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+  }
 
-/* --- THE GLITCH KEYFRAMES --- */
-@keyframes systemGlitch {
-    0% { 
-        opacity: 0; 
-        transform: translate(-50%, -50%) scale(0.9) skewX(10deg); 
-        filter: drop-shadow(5px 0 0 var(--accent-color)) drop-shadow(-5px 0 0 #0ff);
-    }
-    15% { 
-        opacity: 1; 
-        transform: translate(-52%, -48%) scale(1.05) skewX(-15deg); 
-        filter: drop-shadow(-5px 0 0 var(--accent-color)) drop-shadow(5px 0 0 #0ff);
-    }
-    30% { 
-        transform: translate(-48%, -51%) scale(1) skewX(5deg); 
-        filter: drop-shadow(2px 0 0 var(--accent-color));
-    }
-    45% { 
-        transform: translate(-51%, -49%) skewX(-2deg); 
-        filter: none;
-    }
-    60% { 
-        transform: translate(-50%, -50%) skewX(0); 
-    }
-    100% { 
-        opacity: 1; 
-        transform: translate(-50%, -50%) scale(1); 
-    }
-}
-/* --- 2. CATEGORY MODAL CENTERING FIX (TRAPPED CONTAINER FIX) --- */
-#live-view .modal-overlay.active {
-    position: absolute !important; 
-    top: 0 !important;
-    left: 0 !important;
+  .detail-content-wrapper {
+    margin-top: -120px;
+    padding: calc(var(--navbar-offset) + 40px) 24px 60px 24px;
+  }
+
+  .detail-hero-layout {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 40px;
+    margin-bottom: 50px;
+  }
+
+  .detail-poster-card {
+    width: 280px;
+    border-radius: var(--border-radius-xl);
+  }
+
+  #detail-title {
+    font-size: 3.5rem;
+    margin-bottom: 20px;
+  }
+
+  .detail-meta-row {
+    font-size: 1.1rem;
+    margin-bottom: 25px;
+  }
+
+  .genre-pills-row {
+    margin-bottom: 30px;
+  }
+
+  .genre-pill {
+    font-size: 0.9rem;
+    padding: 8px 20px;
+  }
+
+  #detail-overview {
+    font-size: 1.15rem;
+    line-height: 1.8;
+    margin-bottom: 35px;
+    max-width: 800px;
+  }
+
+  .detail-actions {
+    max-width: 500px;
+    gap: 20px;
+  }
+
+  .play-btn-primary,
+  .watchlist-btn {
+    padding: 16px 32px;
+    font-size: 1.2rem;
+  }
+
+  .close-detail-btn {
+    top: calc(var(--navbar-offset) + 20px);
+    right: 25px;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    z-index: 300000;
+  }
+
+  .recommendations-section {
+    width: 100%;
+    margin: 60px 0 0 0;
+    padding: 50px 0;
+    background: #141414;
+    min-height: auto;
+    position: relative;
+    z-index: 10;
+  }
+
+  .recommendations-section h3 {
+    font-size: 1.5rem;
+    margin-bottom: 30px;
+    padding: 0 24px;
+  }
+
+  .recommendations-grid {
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 16px;
+    padding: 0 24px 60px 24px;
+  }
+
+  .recommendations-grid .movie-card {
     width: 100% !important;
-    height: 100% !important;
+  }
+
+  .recommendations-grid .card-poster {
+    border-radius: var(--border-radius-lg);
+  }
+
+  /* Player Desktop */
+  .player-layout {
+    flex-direction: row;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+  }
+  
+  .video-section {
+    flex: 1;
+    height: 100%;
+    aspect-ratio: auto;
+  }
+  
+  .video-section iframe,
+  .iframe-wrapper {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+  }
+  
+  .sidebar-section {
+    width: var(--player-sidebar-width);
+    min-width: var(--player-sidebar-width);
+    max-width: var(--player-sidebar-width);
+    height: 100%;
+    overflow-y: auto;
+    border-left: 1px solid rgba(255,255,255,0.1);
+    border-top: none;
+    background: #121212;
+  }
+  
+  .player-page-view { overflow: hidden; }
+  
+  .sidebar-content {
+    padding: 25px;
+  }
+
+  /* Explore Desktop */
+  .explore-grid { 
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px; 
+    padding: 20px 24px; 
+  }
+  
+  .explore-header-wrapper {
+    padding: 20px 24px;
+    position: relative;
+  }
+
+  /* Search Modal V2 Desktop */
+  .search-modal-v2__header,
+  .explore-filters-container,
+  .results-container {
+    padding: 0 24px;
+  }
+  
+  .search-modal-v2__results {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+    padding: 20px 24px 50px;
+  }
+  
+  .search-modal-v2__back-btn { display: none; }
+  .filter-row { margin: 0; padding: 5px 0; }
+
+  .search-modal-v2__results .movie-card {
+    max-width: none;
+  }
+  
+  .search-modal-v2__results .card-poster {
+    border-radius: 12px;
+  }
+  
+  .search-modal-v2__results .badge-overlay,
+  .search-modal-v2__results .rating-badge {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+  
+  .search-modal-v2__results .rating-badge i {
+    font-size: 0.6rem;
+  }
+  
+  .search-modal-v2__results .card-title {
+    font-size: 0.9rem;
+  }
+
+  /* Category Pills Desktop */
+  .category-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 0 0 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    width: 100%;
+  }
+
+  .category-button {
+    background: rgba(255, 255, 255, 0.06);
+    color: #b0b0b0;
+    border: 1px solid transparent;
+    border-radius: 20px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    font-family: 'Outfit', sans-serif;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    line-height: 1.3;
+    text-transform: none;
+  }
+
+  .category-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .category-button.active {
+    background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+    border-color: transparent;
+    font-weight: 600;
+  }
+
+  .category-dropdown-btn {
+    display: none;
+  }
+
+  /* Extended Detail Backdrop */
+  .detail-backdrop-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 120vh;
+    z-index: 0;
+  }
+
+  #detail-backdrop-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    opacity: 0.45;
+    mask-image: linear-gradient(to bottom, black 88%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 88%, transparent 100%);
+  }
+
+  .detail-overlay-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      #141414 0%,
+      #141414 15%,
+      transparent 40%
+    );
+  }
+
+  .detail-content-wrapper {
+    position: relative;
+    z-index: 10;
+    padding-top: 160px;
+  }
+
+  .recommendations-section {
+    position: relative;
+    z-index: 10;
+    background: #141414;
+    margin-top: 20px;
+  }
+
+  /* Desktop Page Views */
+  #category-view,
+  #explore-view,
+  .search-modal,
+  #info-modal {
+    padding-top: 0;
+  }
+
+  .category-header {
+    padding: 20px 24px;
+  }
+
+  .category-content {
+    padding: 20px 24px;
+    padding-bottom: 40px;
+  }
+
+  .search-header-row {
+    padding: 20px 24px;
+  }
+
+  #search-results {
+    padding: 0 24px;
+    padding-bottom: 40px;
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .info-header {
+    padding: 20px 24px;
+  }
+
+  .info-body {
+    padding: 20px 24px;
+    padding-bottom: 40px;
+  }
+
+  /* Back to Top Desktop */
+  .back-to-top {
+    bottom: 30px !important;
+  }
+}
+
+/* --- Large Desktop (1400px and up): 6 columns, larger cards --- */
+@media (min-width: 1400px) {
+  :root {
+    --player-sidebar-width: 420px;
+  }
+  
+  .slider-viewport { max-height: 650px; }
+
+  /* All grids stay 6 columns, larger gaps for bigger cards */
+  #search-results, 
+  #category-grid,
+  .search-modal-v2__results,
+  .explore-grid,
+  .recommendations-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 20px;
+    padding: 20px 40px 50px !important;
+  }
+  
+  .search-modal-v2__heading {
+    font-size: 1.1rem;
+    margin: 15px 0 20px 5px;
+  }
+
+  /* Large Desktop Live TV */
+  #live-view {
+    height: var(--content-height);
+  }
+
+  .live-player-container {
+    width: 70%;
+  }
+
+  .channel-section {
+    width: 30%;
+    padding: 20px;
+  }
+
+  .channel-button {
+    min-height: 76px;
+    height: 76px;
+  }
+
+  .channel-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .channel-name {
+    font-size: 1rem;
+  }
+
+  .detail-backdrop-layer {
+    max-height: 900px;
+  }
+
+  .detail-content-wrapper {
+    margin-top: -140px;
+    padding: calc(var(--navbar-offset) + 40px) 40px 60px 40px;
+  }
+
+  .detail-poster-card {
+    width: 320px;
+  }
+
+  #detail-title {
+    font-size: 4rem;
+  }
+
+  .recommendations-section {
+    margin: 60px 0 0 0;
+    padding: 50px 0;
+  }
+
+  .recommendations-section h3 {
+    padding: 0 40px;
+  }
+
+  .recommendations-grid {
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 20px;
+    padding: 0 40px 60px 40px;
+  }
+  
+  /* Home horizontal lists - bigger cards */
+  .list .movie-card { 
+    width: 240px; 
+  }
+}
+
+/* --- Touch Devices --- */
+@media (hover: none) {
+  .slider-arrow:hover {
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    transform: translateY(-50%);
+  }
+}
+
+/* --- TV/Smart TV Specific --- */
+@media (hover: hover) and (pointer: coarse) {
+  .slider-arrow:hover {
+    background: #fff;
+    color: #000;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+  }
+}
+
+.nav-item .icon-container {
+  width: 64px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: transparent;
+}
+
+.nav-item.active .icon-container {
+  background-color: rgba(168, 85, 247, 0.15);
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.2);
+} 
+
+.player-page-view {
+    position: fixed !important;
+    top: var(--navbar-offset) !important; 
+    left: 0 !important;
+    width: 100vw !important;
+    height: var(--content-height) !important; 
+    z-index: 99999 !important; 
+    display: none;
+    flex-direction: column;
+}
+
+.player-page-view.active {
     display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: rgba(0, 0, 0, 0.85) !important;
-    backdrop-filter: blur(8px) !important;
-    z-index: 999999 !important;
-    padding: 20px !important;
+}
+
+
+.detail-backdrop-layer,
+.detail-overlay-gradient {
+    pointer-events: none !important; 
+}
+
+.detail-content-wrapper {
+    position: relative;
+    z-index: 30 !important; 
+    pointer-events: auto !important; 
+}
+
+/* 3. EDGE-TO-EDGE RECOMMENDATIONS BACKGROUND */
+.recommendations-section {
+    width: 100vw !important;
+    margin-left: calc(50% - 50vw) !important;
+    margin-right: calc(50% - 50vw) !important;
+    padding: 50px 0 80px 0 !important;
+    background: #141414 !important;
+    position: relative;
+    z-index: 20;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+/* 4. KEEP THE INNER TEXT & CARDS PERFECTLY CENTERED */
+.recommendations-section h3,
+.recommendations-grid {
+    width: 100% !important;
+    max-width: 1400px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 4% !important;
+    padding-right: 4% !important;
     box-sizing: border-box !important;
 }
 
-#live-view .modal-content.category-modal-content {
-    margin: auto !important; 
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    /* THIS IS THE MAGIC LINE: Moves it 50px up from the dead center */
-    transform: translateY(-50px) !important; 
+/* 5. PERFECT RESPONSIVE GRID FOR "YOU MAY ALSO LIKE" */
+.recommendations-grid {
+    display: grid !important;
+    gap: 15px !important;
+}
+
+@media (max-width: 599px) {
+    .recommendations-grid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
+@media (min-width: 600px) and (max-width: 1023px) {
+    .recommendations-grid { grid-template-columns: repeat(4, 1fr) !important; }
+}
+
+@media (min-width: 1024px) {
+    .recommendations-grid { grid-template-columns: repeat(6, 1fr) !important; }
+}
+
+.recommendations-grid .movie-card {
     width: 100% !important;
-    max-width: 400px !important;
-    max-height: 80% !important; 
-    background: #1a1a1a !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    border-radius: 20px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    box-shadow: 0 15px 50px rgba(0,0,0,0.8) !important;
+    max-width: none !important;
+    margin: 0 !important;
 }
 
-/* Ensure the list inside scrolls neatly if it gets too long */
-.mobile-category-list {
-    overflow-y: auto !important;
-    padding-bottom: 10px !important;
-    flex: 1 !important;
+.recommendations-grid .card-poster {
+    width: 100% !important;
+    aspect-ratio: 2/3 !important;
+    border-radius: var(--border-radius-lg) !important;
+}
+/* ==========================================================================
+   LIVE TV LOADING BANNER
+   ========================================================================== */
+.stream-loading-banner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85); 
+    backdrop-filter: blur(5px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 15;
+    pointer-events: none; /* Crucial: Allows clicks to pass through! */
+    transition: opacity 0.3s ease;
+    text-align: center;
 }
 
-/* ========================================================
-   SCROLLBAR & SCROLL BLEED FIXES (Home, Live, Modals)
-   ======================================================== */
-
-/* --- 1. NUKE HOME PAGE SCROLLBARS --- */
-/* Targets the absolute root elements so they can never spawn a scrollbar */
-html, 
-body, 
-#root, 
-#home-view {
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE/Edge */
+.stream-loading-banner h3 {
+    color: var(--accent-color);
+    font-size: clamp(1.2rem, 4vw, 2rem);
+    font-weight: 800;
+    margin: 0 0 5px 0;
+    letter-spacing: 2px;
+    text-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
 }
 
-html::-webkit-scrollbar, 
-body::-webkit-scrollbar, 
-#root::-webkit-scrollbar,
-#home-view::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    background: transparent !important;
+.stream-loading-banner p {
+    color: #aaa;
+    font-size: clamp(0.8rem, 2vw, 1rem);
+    margin: 0;
 }
 
-/* --- 2. FIX LIVE TV SCROLL BOUNCE --- */
-#live-view {
-    overflow: hidden !important; /* Absolutely locks the main container */
-    overscroll-behavior: none !important;
+/* ==========================================================================
+   DESKTOP & LARGE SCREEN MASTER FIXES
+   ========================================================================== */
+
+@media (min-width: 1024px) {
+    /* 1. FIX THE PLAYER SPLIT-SCREEN */
+    .player-page-view {
+        flex-direction: row !important; 
+        overflow: hidden !important;
+    }
+    .player-layout {
+        display: flex !important;
+        flex-direction: row !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+    .video-section {
+        flex: 1 !important;
+        height: 100% !important;
+        /* Prevents the video from crushing the sidebar */
+        max-width: calc(100% - 380px) !important; 
+    }
+    .sidebar-section {
+        width: 380px !important;
+        min-width: 380px !important;
+        max-width: 380px !important;
+        height: 100% !important;
+        border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: #121212 !important;
+    }
+
+    /* 2. FIX THE COLLAPSING DETAIL VIEW BACKGROUND */
+    .detail-backdrop-layer {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 80vh !important; /* Brings back the massive cinematic wallpaper */
+        max-height: 800px !important;
+        z-index: 0 !important;
+    }
+    .detail-content-wrapper {
+        margin-top: 0 !important;
+        /* Pushes the movie poster and text safely down over the backdrop */
+        padding-top: 45vh !important; 
+        position: relative;
+        z-index: 10 !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    .detail-hero-layout {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: flex-end !important;
+        gap: 40px !important;
+    }
+    .detail-poster-card {
+        width: 280px !important; 
+        flex-shrink: 0 !important;
+    }
+    
+    /* 3. FIX THE "YOU MAY ALSO LIKE" OVERLAP */
+    .recommendations-section {
+        margin-top: 80px !important; /* Adds breathing room below the description */
+        padding-top: 50px !important;
+        background: #141414 !important;
+    }
 }
 
-.channel-list-wrapper,
-.channel-section {
-    /* TRAP: Stops the scroll from pushing the player when you hit the bottom */
-    overscroll-behavior-y: contain !important; 
+/* ==========================================================================
+   MOBILE DETAIL VIEW & BACK BUTTON POLISH FIXES
+   ========================================================================== */
+
+/* 1. MOVE BACK BUTTON SAFELY BELOW NAVBAR */
+.close-detail-btn {
+    /* Forces the button to dynamically sit exactly below your Navbar */
+    top: calc(var(--navbar-offset) + 15px) !important;
+    z-index: 300000 !important;
 }
 
-/* --- 3. FIX INFO MODAL SCROLL BLEED --- */
-.info-body,
-.mobile-category-list,
-.search-modal-v2__results {
-    /* TRAP: Stops the Home page from scrolling when you reach the bottom of the modal */
-    overscroll-behavior-y: contain !important; 
+/* 2. FIX THE MASSIVE EMPTY SPACE IN DETAIL VIEW (Mobile & Tablet) */
+@media (max-width: 1023px) {
+    .detail-backdrop-layer {
+        /* Changes it from a "block" that pushes content down, into a floating "wallpaper" */
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 60vh !important;
+        z-index: 0 !important;
+    }
+
+    .detail-content-wrapper {
+        /* Removes the old hacky negative margins */
+        margin-top: 0 !important;
+        /* Pushes the poster safely down past the transparent navbar to overlap the backdrop beautifully */
+        padding-top: calc(var(--navbar-offset) + 12vh) !important; 
+    }
+
+    .detail-poster-card {
+        margin-top: 0 !important;
+        position: relative;
+        z-index: 10 !important;
+    }
+    
+    .detail-hero-layout {
+        margin-top: 0 !important;
+    }
 }
 
-/* Fallback lock: If the Info Modal is open, firmly lock the body behind it */
-body:has(#info-modal.active),
-body:has(#categoryModal.active),
-body:has(.search-modal-v2.active) {
-    overflow: hidden !important;
-    overscroll-behavior-y: none !important;
+/* Force portrait orientation when not in fullscreen */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  /* Detect phone in landscape that's not fullscreen */
+  body:not(:fullscreen) .app-container,
+  body:not(:-webkit-full-screen) .app-container {
+    transform: rotate(90deg);
+    transform-origin: left top;
+    width: 100vh;
+    height: 100vw;
+    overflow-x: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
 }

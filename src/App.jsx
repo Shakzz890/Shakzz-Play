@@ -1,5 +1,7 @@
-import React, { useLayoutEffect, useEffect } from 'react';
-import { App as CapacitorApp } from '@capacitor/app'; // 1. Import Capacitor App
+import React, { useLayoutEffect, useEffect, useCallback } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
+import { StatusBar } from '@capacitor/status-bar';
+import { NavigationBar } from '@capgo/capacitor-navigation-bar'; // Use your existing plugin
 import { GlobalProvider, useGlobal } from './context/GlobalContext';
 
 // Layout Imports
@@ -19,16 +21,13 @@ import PlayerOverlay from './components/Detail/PlayerView';
 import CategoryView from './components/Category/CategoryView';
 import SearchModal from './components/Search/SearchModal';
 
-// === 1. IMPORT THE DIALOG ===
 import UpdateDialog from './components/UpdateDialog';
 
 const AppContent = () => {
-    // 2. Expand destructuring to get all modal states AND isOffline
     const { 
-        isOffline, // <--- ADDED OFFLINE STATE HERE
+        isOffline,
         currentView, 
         switchView,
-        // Modal States for Back Button Logic
         isPlayerOpen, setIsPlayerOpen,
         isDetailOpen, closeDetail,
         categoryModal, setCategoryModal,
@@ -36,72 +35,185 @@ const AppContent = () => {
         infoModalOpen, setInfoModalOpen
     } = useGlobal();
 
-    // 3. Add the Back Button Listener
+    // === IMMERSIVE FULLSCREEN MODE using capgo-navigation-bar ===
+    const enterImmersiveMode = useCallback(async () => {
+        try {
+            // Hide system navigation bar using your existing plugin
+            await NavigationBar.hide();
+            
+            // Hide status bar
+            await StatusBar.hide();
+            
+            // Request fullscreen
+            const docEl = document.documentElement;
+            if (docEl.requestFullscreen) {
+                await docEl.requestFullscreen();
+            } else if (docEl.webkitRequestFullscreen) {
+                await docEl.webkitRequestFullscreen();
+            }
+
+            // Lock to landscape for video
+            if (screen.orientation && screen.orientation.lock) {
+                await screen.orientation.lock('landscape');
+            }
+
+        } catch (err) {
+            console.log('Enter immersive error:', err);
+        }
+    }, []);
+
+    const exitImmersiveMode = useCallback(async () => {
+        try {
+            // Show system navigation bar using your existing plugin
+            await NavigationBar.show();
+            
+            // Show status bar
+            await StatusBar.show();
+            
+            // Exit fullscreen
+            if (document.exitFullscreen) {
+                await document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                await document.webkitExitFullscreen();
+            }
+
+            // Unlock orientation and force portrait
+            if (screen.orientation && screen.orientation.unlock) {
+                screen.orientation.unlock();
+            }
+            
+            await screen.orientation.lock('portrait').catch(() => {});
+
+        } catch (err) {
+            console.log('Exit immersive error:', err);
+        }
+    }, []);
+
+    // === FORCE PORTRAIT AND REFRESH ===
+    const forcePortraitAndRefresh = useCallback(async () => {
+        // Show navigation bar when exiting fullscreen
+        await NavigationBar.show().catch(() => {});
+        await StatusBar.show().catch(() => {});
+        
+        if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+        }
+        
+        try {
+            await screen.orientation.lock('portrait');
+        } catch (e) {
+            // Ignore lock errors
+        }
+        
+        // Force layout recalculation
+        window.dispatchEvent(new Event('resize'));
+        window.scrollTo(0, 0);
+        
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+            document.body.style.display = 'none';
+            document.body.offsetHeight;
+            document.body.style.display = '';
+        }, 100);
+    }, []);
+
+    // === FULLSCREEN CHANGE HANDLER ===
+    useEffect(() => {
+        const handleFullscreenChange = async () => {
+            const isFullscreen = !!document.fullscreenElement;
+            
+            if (!isFullscreen) {
+                // Exited fullscreen - ensure nav bar is shown
+                await NavigationBar.show().catch(() => {});
+                await StatusBar.show().catch(() => {});
+                forcePortraitAndRefresh();
+            } else {
+                // Entered fullscreen - hide nav bar
+                await NavigationBar.hide().catch(() => {});
+                await StatusBar.hide().catch(() => {});
+            }
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        
+        // Handle visibility change (when app comes back from background)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && !document.fullscreenElement) {
+                NavigationBar.show().catch(() => {});
+                StatusBar.show().catch(() => {});
+                forcePortraitAndRefresh();
+            }
+        });
+
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+        };
+    }, [forcePortraitAndRefresh]);
+
+    // === BACK BUTTON HANDLER ===
     useEffect(() => {
         const handleBackButton = async () => {
-            // Priority 1: Close Player if open
-            if (isPlayerOpen) {
-                setIsPlayerOpen(false);
+            // Priority 0: Exit fullscreen if active
+            if (document.fullscreenElement) {
+                await exitImmersiveMode();
                 return;
             }
 
-            // Priority 2: Close Detail View if open
+            if (isPlayerOpen) {
+                setIsPlayerOpen(false);
+                forcePortraitAndRefresh();
+                return;
+            }
+
             if (isDetailOpen) {
                 closeDetail();
                 return;
             }
 
-            // Priority 3: Close Category View if open
             if (categoryModal.isOpen) {
                 setCategoryModal(prev => ({ ...prev, isOpen: false }));
                 return;
             }
 
-            // Priority 4: Close Search Modal if open
             if (searchModalOpen) {
                 setSearchModalOpen(false);
                 return;
             }
 
-            // Priority 5: Close Info/Settings Modal if open
             if (infoModalOpen) {
                 setInfoModalOpen(false);
                 return;
             }
 
-            // Priority 6: Navigation Logic
-            // If user is on 'Explore' or 'Live', go back to 'Home' first
             if (currentView !== 'home') {
                 switchView('home');
                 return;
             }
 
-            // Priority 7: If on Home and no modals open, Exit App
             CapacitorApp.exitApp();
         };
 
         const backButtonListener = CapacitorApp.addListener('backButton', handleBackButton);
 
-        // Cleanup listener on unmount
         return () => {
             backButtonListener.then(f => f.remove());
         };
     }, [
-        isPlayerOpen, 
-        isDetailOpen, 
-        categoryModal.isOpen, 
-        searchModalOpen, 
-        infoModalOpen, 
-        currentView, // Added currentView dependency
-        setIsPlayerOpen, 
-        closeDetail, 
-        setCategoryModal, 
-        setSearchModalOpen, 
-        setInfoModalOpen, 
-        switchView
+        isPlayerOpen, isDetailOpen, categoryModal.isOpen, 
+        searchModalOpen, infoModalOpen, currentView,
+        setIsPlayerOpen, closeDetail, setCategoryModal, 
+        setSearchModalOpen, setInfoModalOpen, switchView,
+        forcePortraitAndRefresh, exitImmersiveMode
     ]);
 
-    const handleNavClick = (view) => {
+    // === NAVIGATION CLICK HANDLER ===
+    const handleNavClick = async (view) => {
+        if (document.fullscreenElement) {
+            await exitImmersiveMode();
+        }
+        
         document.documentElement.style.scrollBehavior = 'auto';
         window.scrollTo(0, 0);
         switchView(view); 
@@ -113,26 +225,40 @@ const AppContent = () => {
         window.scrollTo(0, 0);
     }, [currentView]);
 
+    useEffect(() => {
+        if (!document.fullscreenElement) {
+            forcePortraitAndRefresh();
+        }
+    }, [currentView, forcePortraitAndRefresh]);
+
+    // === EXPOSE FULLSCREEN FUNCTIONS TO WINDOW ===
+    useEffect(() => {
+        window.enterAppFullscreen = enterImmersiveMode;
+        window.exitAppFullscreen = exitImmersiveMode;
+    }, [enterImmersiveMode, exitImmersiveMode]);
+
+    // === INITIAL SETUP: Ensure nav bar is visible on app start ===
+    useEffect(() => {
+        NavigationBar.show().catch(() => {});
+        StatusBar.show().catch(() => {});
+    }, []);
+
     const isHomeActive = currentView === 'home';
     const isExploreActive = currentView === 'explore';
     const isLiveActive = currentView === 'live';
 
     return (
         <>
-            {/* NEW LOADER COMPONENT */}
             <Loader />
-            
             <Sidebar />
             <Navbar />
 
-            {/* === CONDITIONAL CONTENT RENDER === */}
             {isOffline ? (
-                // 1. IF OFFLINE: Show the offline UI in the middle of the screen
                 <div style={{
                     height: '100vh',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', 
                     justifyContent: 'center', textAlign: 'center', padding: '20px',
-                    paddingBottom: 'var(--bottom-nav-height)' // Prevents overlapping with bottom nav
+                    paddingBottom: 'var(--bottom-nav-height)'
                 }}>
                     <i className="fa-solid fa-wifi" style={{ fontSize: '4rem', color: '#ef4444', marginBottom: '20px', position: 'relative' }}>
                         <div style={{ position: 'absolute', width: '120%', height: '6px', background: 'var(--bg-color, #0a0a0a)', borderTop: '2px solid #ef4444', top: '50%', left: '-10%', transform: 'rotate(-45deg)' }}></div>
@@ -141,14 +267,11 @@ const AppContent = () => {
                     <p style={{ color: '#aaa', fontSize: '0.95rem', maxWidth: '300px' }}>Check your network connection to synchronize with the server.</p>
                 </div>
             ) : (
-                // 2. IF ONLINE: Render the pages and modals normally
                 <>
-                    {/* MAIN PAGES */}
                     <div style={{ display: currentView === 'home' ? 'block' : 'none' }}><Home /></div>
                     <div style={{ display: currentView === 'explore' ? 'block' : 'none' }}><Explore /></div>
                     <div style={{ display: currentView === 'live' ? 'block' : 'none' }}><Live /></div>
                     
-                    {/* OVERLAYS & MODALS */}
                     <DetailView />
                     <PlayerOverlay />
                     <CategoryView />
@@ -156,11 +279,9 @@ const AppContent = () => {
                 </>
             )}
 
-            {/* These stay outside so they can still be clicked/viewed while offline */}
             <InfoModal />
             <UpdateDialog />
             
-            {/* MOBILE BOTTOM NAV - Always visible! */}
             <div className="bottom-nav">
                 <div className={`nav-item ${isHomeActive ? 'active' : ''}`} onClick={() => handleNavClick('home')}>
                     <i className="fa-solid fa-house"></i><span>Home</span>

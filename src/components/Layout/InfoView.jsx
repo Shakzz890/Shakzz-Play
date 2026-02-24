@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGlobal } from '../../context/GlobalContext';
+import emailjs from '@emailjs/browser'; // ADD THIS IMPORT
 
 // --- EXPANDED STATIC CONTENT ---
 const infoContent = {
@@ -32,6 +33,26 @@ const infoContent = {
         </div>
     `,
     updates: `
+      <div class="update-item">
+        <div class="update-header">
+            <h3 class="update-title">🚀 Official Release v1.0</h3>
+            <span class="update-date">2026-02-22</span>
+        </div>
+        <p class="update-content">
+            <strong>System Online:</strong> Shakzz Play is now officially live! After extensive beta testing, we're proud to deliver a stable, high-performance streaming experience.
+            <br><br>
+            <strong>What's New:</strong>
+            <br>• Complete UI/UX overhaul with Shadow Monarch dark theme
+            <br>• Optimized video player with multi-server backup system
+            <br>• Live TV with 100+ channels 
+            <br>• Advanced search with filters (Type, Region, Sort)
+            <br>• "Continue Watching" and "My List" personalization
+            <br>• Improved mobile responsiveness across all devices
+            <br>• Faster load times and reduced buffering
+            <br>• Bug fixes and stability improvements
+            <br><br>
+        </p>
+    </div>
         <div class="update-item">
             <div class="update-header">
                 <h3 class="update-title"> Beta Release</h3>
@@ -170,40 +191,540 @@ const infoContent = {
             <br><br>
             <strong>Last Updated:</strong> February 20, 2026
             <br>
-            <strong>Effective Date:</strong> February 20, 2026
+            <strong>Effective Date:</strong> February 20, 2026b
             <br><br>
             Continued use of our service after changes constitutes acceptance of the updated policy.
         </p>
     </div>
         </div>
-    `,
-    contact: `
-        <div style="text-align: center; padding: 20px 0;">
-            <i class="fa-solid fa-envelope-open-text" style="font-size: 3rem; color: #ccc; margin-bottom: 20px;"></i>
-            <h2 style="color: #fff; margin-bottom: 10px;">Contact Support</h2>
-            <p style="color: #aaa; max-width: 500px; margin: 0 auto 30px auto;">
-                Found a broken link? Want to request a movie? Or just want to report a bug?
-                <br>Fill out the form below and our admin team will get back to you within 24 hours.
-            </p>
-            <form action="https://formspree.io/f/manpwdko" method="POST" style="max-width: 500px; margin: 0 auto; text-align: left;">
-                <div style="margin-bottom: 15px;">
-                    <input class="contact-input" type="email" name="email" placeholder="Your Email Address" required style="width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #333; color: white; border-radius: 8px;">
+    `
+    // REMOVED: contact - now uses ContactContent component
+};
+
+// --- SOLO LEVELING STYLE CONTACT FORM WITH AUTO-REPLY ---
+const ContactContent = () => {
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        subject: 'General Inquiry',
+        message: ''
+    });
+    const [isSending, setIsSending] = useState(false);
+    const [status, setStatus] = useState(null);
+    const [systemLogs, setSystemLogs] = useState([]);
+
+    const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1475184614438993982/QgAq9o2i8iCLPHDwpF6HUAa-e7nEyT6AOvTgd-7PVNJetyJuFmUp_kuIFT-ko3xPMGOE  ';
+
+    // EmailJS config
+    const EMAILJS_SERVICE_ID = 'service_341fbji';
+    const EMAILJS_TEMPLATE_ID = 'template_zpao0dk'; // Replace with your template ID
+    const EMAILJS_AUTO_REPLY_TEMPLATE_ID = 'template_iehtcwp'; // Create this for auto-reply
+    const EMAILJS_PUBLIC_KEY = 'sY62_SPQO2ivADWIT';
+
+    // Add system log
+    const addLog = (message, type = 'info') => {
+        const timestamp = new Date().toLocaleTimeString('en-US', { 
+            hour12: false, 
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        setSystemLogs(prev => [...prev.slice(-4), { time: timestamp, message, type }]);
+    };
+
+    const sendToEmailJS = async (data) => {
+        // Send to admin
+        const adminResponse = await emailjs.send(
+            EMAILJS_SERVICE_ID,
+            EMAILJS_TEMPLATE_ID,
+            {
+                from_name: data.name,
+                from_email: data.email,
+                subject: `[SHAKZZ PLAY] ${data.subject}`,
+                message: data.message,
+                reply_to: data.email
+            },
+            EMAILJS_PUBLIC_KEY
+        );
+
+        // Send auto-reply to user (works on free tier!)
+        try {
+            await emailjs.send(
+                EMAILJS_SERVICE_ID,
+                EMAILJS_AUTO_REPLY_TEMPLATE_ID,
+                {
+                    to_name: data.name,
+                    to_email: data.email,
+                    subject: data.subject,
+                    reply_message: getAutoReplyMessage(data.name, data.subject)
+                },
+                EMAILJS_PUBLIC_KEY
+            );
+        } catch (err) {
+            console.log('Auto-reply failed (non-critical):', err);
+        }
+
+        return adminResponse.status === 200;
+    };
+
+    const getAutoReplyMessage = (name, subject) => {
+        return `
+Hunter ${name},
+
+Your request [${subject}] has been received by the Shadow Monarch system.
+
+⚡ STATUS: QUEUED
+📊 PRIORITY: S-RANK
+⏱️ RESPONSE TIME: Within 24 hours
+
+Our guild administrators are analyzing your transmission. Do not attempt to send duplicate requests - this may trigger the system's anti-spam protocols.
+
+May the shadows guide you,
+SHAKZZ PLAY System
+        `.trim();
+    };
+
+    const sendToDiscord = async (data) => {
+        const message = {
+            content: '```SYSTEM ALERT: EMERGENCY TRANSMISSION```',
+            embeds: [{
+                title: '⚠️ SHAKZZ PLAY CONTACT [FALLBACK]',
+                color: 0xff0000,
+                fields: [
+                    { name: '👤 Hunter Name', value: data.name, inline: true },
+                    { name: '📧 Email', value: data.email, inline: true },
+                    { name: '📌 Subject', value: data.subject },
+                    { name: '📝 Message', value: data.message.length > 1000 ? data.message.substring(0, 1000) + '...' : data.message }
+                ],
+                footer: { 
+                    text: `SYSTEM TIME: ${new Date().toLocaleString()} | EmailJS Quota Exceeded`,
+                    icon_url: 'https://cdn.discordapp.com/emojis/123456789.png  '
+                },
+                timestamp: new Date().toISOString()
+            }]
+        };
+
+        const response = await fetch(DISCORD_WEBHOOK, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(message)
+        });
+        return response.ok;
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSending(true);
+        setStatus(null);
+        addLog('Initializing transmission...', 'info');
+
+        try {
+            addLog('Connecting to Shadow Monarch servers...', 'info');
+            const sent = await sendToEmailJS(formData);
+            
+            if (sent) {
+                addLog('Transmission successful!', 'success');
+                setStatus({ 
+                    type: 'success', 
+                    title: 'SYSTEM: MESSAGE TRANSMITTED',
+                    message: 'Your request has been logged. Check your email for confirmation.',
+                    fallback: false 
+                });
+                setFormData({ name: '', email: '', subject: 'General Inquiry', message: '' });
+            } else {
+                throw new Error('Transmission failed');
+            }
+        } catch (err) {
+            addLog('Primary channel failed. Switching to emergency protocol...', 'warning');
+            
+            try {
+                const discordSent = await sendToDiscord(formData);
+                
+                if (discordSent) {
+                    addLog('Emergency transmission complete!', 'warning');
+                    setStatus({ 
+                        type: 'warning', 
+                        title: 'SYSTEM: EMERGENCY MODE',
+                        message: 'Message saved to backup servers. Manual reply required.',
+                        fallback: true 
+                    });
+                    setFormData({ name: '', email: '', subject: 'General Inquiry', message: '' });
+                } else {
+                    throw new Error('All channels failed');
+                }
+            } catch (discordErr) {
+                addLog('CRITICAL: All transmission channels offline', 'error');
+                setStatus({ 
+                    type: 'error', 
+                    title: 'SYSTEM: CRITICAL FAILURE',
+                    message: 'Unable to establish connection. Please try again later.',
+                    fallback: false 
+                });
+            }
+        } finally {
+            setIsSending(false);
+            setTimeout(() => setStatus(null), 8000);
+        }
+    };
+
+    const getStatusColor = () => {
+        if (!status) return '#888';
+        if (status.type === 'success') return '#46d369';
+        if (status.type === 'warning') return '#f5c518';
+        return '#ef4444';
+    };
+
+    return (
+        <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '20px', 
+            maxWidth: '500px', 
+            margin: '0 auto',
+            fontFamily: 'Orbitron, sans-serif'
+        }}>
+            {/* System Header */}
+            <div style={{ 
+                textAlign: 'center',
+                border: '1px solid rgba(168, 85, 247, 0.3)',
+                borderRadius: '12px',
+                padding: '20px',
+                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(0,0,0,0.3) 100%)',
+                position: 'relative',
+                overflow: 'hidden'
+            }}>
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '2px',
+                    background: 'linear-gradient(90deg, transparent, #a855f7, transparent)',
+                    animation: 'scan 2s linear infinite'
+                }} />
+                <i className="fa-solid fa-tower-broadcast" style={{ 
+                    fontSize: '2.5rem', 
+                    color: '#a855f7',
+                    textShadow: '0 0 20px rgba(168, 85, 247, 0.5)',
+                    marginBottom: '10px',
+                    display: 'block'
+                }}></i>
+                <h2 style={{ 
+                    color: '#fff', 
+                    marginBottom: '5px', 
+                    fontSize: '1.3rem',
+                    letterSpacing: '2px',
+                    textTransform: 'uppercase'
+                }}>
+                    Shadow Monarch
+                </h2>
+                <p style={{ 
+                    color: '#a855f7', 
+                    fontSize: '0.75rem',
+                    letterSpacing: '3px'
+                }}>
+                    SECURE COMMUNICATION CHANNEL
+                </p>
+            </div>
+
+            {/* System Logs */}
+            <div style={{
+                background: 'rgba(0,0,0,0.5)',
+                border: '1px solid #333',
+                borderRadius: '8px',
+                padding: '12px',
+                fontFamily: 'monospace',
+                fontSize: '0.75rem'
+            }}>
+                <div style={{ color: '#666', marginBottom: '8px', borderBottom: '1px solid #333', paddingBottom: '5px' }}>
+                    SYSTEM LOGS:
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <select class="contact-input" name="subject" style="width: 100%; padding: 12px; background: rgba(30,30,30,1); border: 1px solid #333; color: white; border-radius: 8px;">
+                {systemLogs.length === 0 ? (
+                    <div style={{ color: '#444' }}>{'>'} System standby...</div>
+                ) : (
+                    systemLogs.map((log, i) => (
+                        <div key={i} style={{ 
+                            color: log.type === 'success' ? '#46d369' : log.type === 'warning' ? '#f5c518' : log.type === 'error' ? '#ef4444' : '#888',
+                            marginBottom: '4px'
+                        }}>
+                            [{log.time}] {log.message}
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Contact Form */}
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                {/* Name - CLEAR LABEL */}
+                <div style={{ position: 'relative' }}>
+                    <label style={{
+                        position: 'absolute',
+                        left: '12px',
+                        top: '-8px',
+                        background: '#050505',
+                        padding: '0 6px',
+                        color: '#a855f7',
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
+                    }}>
+                        Your Name *
+                    </label>
+                    <input
+                        type="text"
+                        name="name"
+                        placeholder="John Doe"
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        required
+                        disabled={isSending}
+                        style={{
+                            width: '100%',
+                            padding: '16px',
+                            background: 'rgba(168, 85, 247, 0.05)',
+                            border: '1px solid #333',
+                            borderRadius: '8px',
+                            color: '#fff',
+                            fontSize: '0.95rem',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                            transition: 'all 0.3s',
+                            fontFamily: 'inherit'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#a855f7'}
+                        onBlur={(e) => e.target.style.borderColor = '#333'}
+                    />
+                </div>
+
+                {/* Email - CLEAR LABEL */}
+                <div style={{ position: 'relative' }}>
+                    <label style={{
+                        position: 'absolute',
+                        left: '12px',
+                        top: '-8px',
+                        background: '#050505',
+                        padding: '0 6px',
+                        color: '#a855f7',
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
+                    }}>
+                        Email Address *
+                    </label>
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="john@example.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        required
+                        disabled={isSending}
+                        style={{
+                            width: '100%',
+                            padding: '16px',
+                            background: 'rgba(168, 85, 247, 0.05)',
+                            border: '1px solid #333',
+                            borderRadius: '8px',
+                            color: '#fff',
+                            fontSize: '0.95rem',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                            transition: 'all 0.3s',
+                            fontFamily: 'inherit'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#a855f7'}
+                        onBlur={(e) => e.target.style.borderColor = '#333'}
+                    />
+                </div>
+
+                {/* Subject - CLEAR LABEL */}
+                <div style={{ position: 'relative' }}>
+                    <label style={{
+                        position: 'absolute',
+                        left: '12px',
+                        top: '-8px',
+                        background: '#050505',
+                        padding: '0 6px',
+                        color: '#a855f7',
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
+                    }}>
+                        Subject *
+                    </label>
+                    <select
+                        name="subject"
+                        value={formData.subject}
+                        onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                        required
+                        disabled={isSending}
+                        style={{
+                            width: '100%',
+                            padding: '16px',
+                            background: 'rgba(30,30,30,1)',
+                            border: '1px solid #333',
+                            borderRadius: '8px',
+                            color: '#fff',
+                            fontSize: '0.95rem',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                            appearance: 'none',
+                            fontFamily: 'inherit',
+                            cursor: 'pointer',
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg  ' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a855f7' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 16px center'
+                        }}
+                    >
                         <option value="General Inquiry">General Inquiry</option>
                         <option value="Report Broken Link">Report Broken Link</option>
-                        <option value="Content Request">Request Movie/Series</option>
-                        <option value="Bug Report">Report a Bug</option>
+                        <option value="Content Request">Content Request</option>
+                        <option value="Bug Report">Bug Report</option>
                     </select>
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <textarea class="contact-input" name="message" rows="5" placeholder="How can we help?" required style="width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid #333; color: white; border-radius: 8px;"></textarea>
+
+                {/* Message - CLEAR LABEL */}
+                <div style={{ position: 'relative' }}>
+                    <label style={{
+                        position: 'absolute',
+                        left: '12px',
+                        top: '-8px',
+                        background: '#050505',
+                        padding: '0 6px',
+                        color: '#a855f7',
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
+                    }}>
+                        Message *
+                    </label>
+                    <textarea
+                        name="message"
+                        rows="5"
+                        placeholder="How can we help you today?"
+                        value={formData.message}
+                        onChange={(e) => setFormData({...formData, message: e.target.value})}
+                        required
+                        disabled={isSending}
+                        style={{
+                            width: '100%',
+                            padding: '16px',
+                            background: 'rgba(168, 85, 247, 0.05)',
+                            border: '1px solid #333',
+                            borderRadius: '8px',
+                            color: '#fff',
+                            fontSize: '0.95rem',
+                            outline: 'none',
+                            resize: 'vertical',
+                            minHeight: '120px',
+                            boxSizing: 'border-box',
+                            fontFamily: 'inherit',
+                            transition: 'all 0.3s'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#a855f7'}
+                        onBlur={(e) => e.target.style.borderColor = '#333'}
+                    />
                 </div>
-                <button type="submit" class="contact-btn" style="width: 100%; padding: 14px; background: #e50914; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Send Message</button>
+
+                {/* Submit Button */}
+                <button
+                    type="submit"
+                    disabled={isSending}
+                    style={{
+                        width: '100%',
+                        padding: '16px',
+                        background: isSending ? '#1a1a1a' : 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)',
+                        color: '#fff',
+                        border: isSending ? '1px solid #333' : '1px solid rgba(168, 85, 247, 0.5)',
+                        borderRadius: '8px',
+                        fontWeight: '700',
+                        fontSize: '1rem',
+                        cursor: isSending ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '10px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '2px',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        boxShadow: isSending ? 'none' : '0 0 20px rgba(168, 85, 247, 0.3)',
+                        transition: 'all 0.3s'
+                    }}
+                >
+                    {isSending ? (
+                        <>
+                            <i className="fas fa-circle-notch fa-spin"></i>
+                            Sending...
+                        </>
+                    ) : (
+                        <>
+                            <i className="fas fa-paper-plane"></i>
+                            Send Message
+                        </>
+                    )}
+                </button>
+
+                {/* Status Message */}
+                {status && (
+                    <div style={{
+                        padding: '16px',
+                        borderRadius: '8px',
+                        background: 'rgba(0,0,0,0.5)',
+                        border: `1px solid ${getStatusColor()}`,
+                        borderLeft: `4px solid ${getStatusColor()}`,
+                        color: '#fff',
+                        position: 'relative',
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: '1px',
+                            background: `linear-gradient(90deg, transparent, ${getStatusColor()}, transparent)`
+                        }} />
+                        <div style={{ 
+                            fontSize: '0.75rem', 
+                            color: getStatusColor(),
+                            textTransform: 'uppercase',
+                            letterSpacing: '2px',
+                            marginBottom: '5px'
+                        }}>
+                            {status.title}
+                        </div>
+                        <div style={{ fontSize: '0.9rem' }}>
+                            {status.message}
+                        </div>
+                        {status.fallback && (
+                            <div style={{ 
+                                fontSize: '0.7rem', 
+                                marginTop: '8px', 
+                                color: '#888',
+                                borderTop: '1px solid #333',
+                                paddingTop: '8px'
+                            }}>
+                                ⚠️ Emergency protocol active. Response may be delayed.
+                            </div>
+                        )}
+                    </div>
+                )}
             </form>
+
+            {/* Footer Note */}
+            <p style={{ 
+                textAlign: 'center', 
+                color: '#444', 
+                fontSize: '0.65rem',
+                letterSpacing: '1px',
+                textTransform: 'uppercase'
+            }}>
+                <i className="fas fa-shield-alt" style={{ marginRight: '5px', color: '#a855f7' }}></i>
+                Secured by Shadow Monarch Protocol • Response within 24h
+            </p>
         </div>
-    `
+    );
 };
 
 // --- INTERACTIVE DONATE COMPONENT (BPI -> PAYPAL -> CRYPTO) ---
@@ -228,7 +749,7 @@ const DonateContent = () => {
             <div className="update-item" style={{ textAlign: 'center', border: '1px solid #B30000', background: 'rgba(179, 0, 0, 0.1)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '15px' }}>
                     <i className="fa-solid fa-qrcode" style={{ fontSize: '1.5rem', color: '#B30000' }}></i>
-                    <h3 style={{ color: '#fff', margin: 0 }}>Scan to Pay (BPI)</h3>
+                    <h3 style={{ color: '#fff', margin: 0 }}>Scan to Donate (BPI)</h3>
                 </div>
                 
                 {/* Clickable Image Container */}
@@ -254,17 +775,7 @@ const DonateContent = () => {
                 <p style={{ color: '#ccc', marginTop: '10px', fontSize: '0.8rem' }}>(Click image to zoom)</p>
             </div>
 
-            {/* 2. PAYPAL (Second) */}
-            <div className="update-item" style={{ textAlign: 'center', border: '1px solid #00457C', background: 'rgba(0, 69, 124, 0.1)' }}>
-                <i className="fa-brands fa-paypal" style={{ fontSize: '2.5rem', color: '#00457C', marginBottom: '15px' }}></i>
-                <h3 style={{ color: '#fff', marginBottom: '5px' }}>PayPal</h3>
-                <p style={{ color: '#ccc', marginBottom: '15px', fontSize: '0.9rem' }}>Fast and secure donation via PayPal.</p>
-                <a href="https://paypal.me/supremeninja104" target="_blank" className="contact-btn" style={{ display: 'block', textDecoration: 'none', background: '#00457C', textAlign: 'center', padding: '12px', borderRadius: '8px' }}>
-                    Send to @supremeninja104
-                </a>
-            </div>
-
-            {/* 3. CRYPTO (Third) */}
+            {/* 2. CRYPTO (Third) */}
             <div className="update-item" style={{ textAlign: 'center', border: '1px solid #627EEA', background: 'rgba(98, 126, 234, 0.1)' }}>
                 <i className="fa-brands fa-ethereum" style={{ fontSize: '2.5rem', color: '#627EEA', marginBottom: '15px' }}></i>
                 <h3 style={{ color: '#fff', marginBottom: '5px' }}>Crypto (USDT)</h3>
@@ -340,6 +851,18 @@ const InfoView = () => {
         donate: 'Support Shakzz Play'
     };
 
+    // RENDER CONTENT BASED ON TYPE
+    const renderContent = () => {
+        switch (infoModal.type) {
+            case 'donate':
+                return <DonateContent />;
+            case 'contact':
+                return <ContactContent />;
+            default:
+                return <div dangerouslySetInnerHTML={{ __html: infoContent[infoModal.type] }}></div>;
+        }
+    };
+
     return (
         <div id="info-modal" className="info-modal active">
             <div className="info-content-wrapper">
@@ -349,12 +872,7 @@ const InfoView = () => {
                 </div>
                 
                 <div className="info-body" id="info-body">
-                    {/* Render Interactive Donate Component OR Static HTML Strings */}
-                    {infoModal.type === 'donate' ? (
-                        <DonateContent />
-                    ) : (
-                        <div dangerouslySetInnerHTML={{ __html: infoContent[infoModal.type] }}></div>
-                    )}
+                    {renderContent()}
                 </div>
             </div>
         </div>

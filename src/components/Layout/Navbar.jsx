@@ -77,7 +77,7 @@ const Navbar = () => {
     const isHomeActive = currentView === 'home' && !isExploreOpen;
     const isLiveActive = currentView === 'live' && !isExploreOpen;
 
-    const isSolid = currentView !== 'home' || scrolled || isExploreOpen || isDetailOpen || isPlayerOpen || infoModal.isOpen || categoryModal.isOpen;
+    const isSolid = currentView !== 'home' || scrolled || searchModal.isOpen || isDetailOpen || isPlayerOpen || infoModal.isOpen || categoryModal.isOpen;
 
     return (
         <div className={`navbar ${isSolid ? 'solid-nav' : ''}`}>

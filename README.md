@@ -9,7 +9,6 @@ Welcome to **Shakzz Play**! A hybrid, all-in-one streaming application built to 
 ## ✨ Key Features
 
 * **🍿 Massive VOD Library:** Stream trending Movies, top K-Dramas, C-Dramas, and Filipino Series, powered by TMDB.
-* **🎌 Native Anime Integration:** Bypasses standard western API limits. Fetches accurate episode counts, synopses, and recommendations directly from **MyAnimeList (Jikan API)**.
 * **📡 Live TV Hub:** Watch local and international Live TV seamlessly. Channel lists are dynamically fetched securely via a Cloudflare Worker proxy.
 * **⚡ Multi-Source Playback:** Never get stuck buffering. Built-in server selection lets you swap between backup streaming APIs instantly.
 * **🛡️ Offline Protection Mode:** If your internet drops, a custom "Blast Door" UI safely locks the content view while keeping the navigation bars accessible, functioning just like a premium native app.

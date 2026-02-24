@@ -4,7 +4,7 @@ import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
 // ⚠️ KEEP YOUR URL HERE
-const VERSION_JSON_URL = 'https://raw.githubusercontent.com/Shakzz890/Shakzz-Play/refs/heads/main/version.json';
+const VERSION_JSON_URL = 'https://raw.githubusercontent.com/Shakzz890/Shakzz_Play/refs/heads/main/version.json';
 
 export const useVersionCheck = () => {
   const [updateInfo, setUpdateInfo] = useState(null);
