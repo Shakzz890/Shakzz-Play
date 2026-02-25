@@ -7,7 +7,7 @@ import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { StatusBar } from '@capacitor/status-bar';
 import { NavigationBar } from '@capgo/capacitor-navigation-bar';
 
-const SECURE_WORKER_URL = "https://stream.supreme-ninja01.workers.dev";
+const SECURE_WORKER_URL = import.meta.env.VITE_PROXY_BASE_URL;
 
 const TABS = [
     "all", 
