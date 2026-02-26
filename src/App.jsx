@@ -1,7 +1,7 @@
-import React, { useLayoutEffect, useEffect, useCallback } from 'react';
+import React, { useLayoutEffect, useEffect, useCallback, useRef } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { StatusBar } from '@capacitor/status-bar';
-import { NavigationBar } from '@capgo/capacitor-navigation-bar'; // Use your existing plugin
+import { NavigationBar } from '@capgo/capacitor-navigation-bar';
 import { GlobalProvider, useGlobal } from './context/GlobalContext';
 
 // Layout Imports
@@ -35,16 +35,16 @@ const AppContent = () => {
         infoModalOpen, setInfoModalOpen
     } = useGlobal();
 
+    // Track if we've already initialized to prevent double-calls
+    const isInitializedRef = useRef(false);
+    const lastViewRef = useRef(currentView);
+
     // === IMMERSIVE FULLSCREEN MODE using capgo-navigation-bar ===
     const enterImmersiveMode = useCallback(async () => {
         try {
-            // Hide system navigation bar using your existing plugin
             await NavigationBar.hide();
-            
-            // Hide status bar
             await StatusBar.hide();
             
-            // Request fullscreen
             const docEl = document.documentElement;
             if (docEl.requestFullscreen) {
                 await docEl.requestFullscreen();
@@ -52,11 +52,9 @@ const AppContent = () => {
                 await docEl.webkitRequestFullscreen();
             }
 
-            // Lock to landscape for video
             if (screen.orientation && screen.orientation.lock) {
                 await screen.orientation.lock('landscape');
             }
-
         } catch (err) {
             console.log('Enter immersive error:', err);
         }
@@ -64,34 +62,34 @@ const AppContent = () => {
 
     const exitImmersiveMode = useCallback(async () => {
         try {
-            // Show system navigation bar using your existing plugin
             await NavigationBar.show();
-            
-            // Show status bar
             await StatusBar.show();
             
-            // Exit fullscreen
             if (document.exitFullscreen) {
                 await document.exitFullscreen();
             } else if (document.webkitExitFullscreen) {
                 await document.webkitExitFullscreen();
             }
 
-            // Unlock orientation and force portrait
             if (screen.orientation && screen.orientation.unlock) {
                 screen.orientation.unlock();
             }
             
             await screen.orientation.lock('portrait').catch(() => {});
-
         } catch (err) {
             console.log('Exit immersive error:', err);
         }
     }, []);
 
-    // === FORCE PORTRAIT AND REFRESH ===
-    const forcePortraitAndRefresh = useCallback(async () => {
-        // Show navigation bar when exiting fullscreen
+    // === SAFE REFRESH - Only when needed, not on Alt+Tab ===
+    const forcePortraitAndRefresh = useCallback(async (isFromVisibilityChange = false) => {
+        // Skip aggressive refresh if coming from visibility change (Alt+Tab)
+        if (isFromVisibilityChange) {
+            await NavigationBar.show().catch(() => {});
+            await StatusBar.show().catch(() => {});
+            return;
+        }
+
         await NavigationBar.show().catch(() => {});
         await StatusBar.show().catch(() => {});
         
@@ -105,17 +103,12 @@ const AppContent = () => {
             // Ignore lock errors
         }
         
-        // Force layout recalculation
-        window.dispatchEvent(new Event('resize'));
-        window.scrollTo(0, 0);
-        
-        setTimeout(() => {
-            window.dispatchEvent(new Event('resize'));
-            document.body.style.display = 'none';
-            document.body.offsetHeight;
-            document.body.style.display = '';
-        }, 100);
-    }, []);
+        // Only scroll to top on actual view changes, not on every refresh
+        if (lastViewRef.current !== currentView) {
+            window.scrollTo(0, 0);
+            lastViewRef.current = currentView;
+        }
+    }, [currentView]);
 
     // === FULLSCREEN CHANGE HANDLER ===
     useEffect(() => {
@@ -123,12 +116,10 @@ const AppContent = () => {
             const isFullscreen = !!document.fullscreenElement;
             
             if (!isFullscreen) {
-                // Exited fullscreen - ensure nav bar is shown
                 await NavigationBar.show().catch(() => {});
                 await StatusBar.show().catch(() => {});
-                forcePortraitAndRefresh();
+                // Don't call forcePortraitAndRefresh here - let visibility handler deal with it
             } else {
-                // Entered fullscreen - hide nav bar
                 await NavigationBar.hide().catch(() => {});
                 await StatusBar.hide().catch(() => {});
             }
@@ -137,25 +128,38 @@ const AppContent = () => {
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
         
-        // Handle visibility change (when app comes back from background)
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && !document.fullscreenElement) {
-                NavigationBar.show().catch(() => {});
-                StatusBar.show().catch(() => {});
-                forcePortraitAndRefresh();
-            }
-        });
-
         return () => {
             document.removeEventListener('fullscreenchange', handleFullscreenChange);
             document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
         };
-    }, [forcePortraitAndRefresh]);
+    }, []);
+
+    // === VISIBILITY CHANGE HANDLER - Fixed for Alt+Tab ===
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                // Just ensure nav bars are visible, DON'T reset scroll or re-render
+                NavigationBar.show().catch(() => {});
+                StatusBar.show().catch(() => {});
+                
+                // Only force portrait if not in fullscreen
+                if (!document.fullscreenElement) {
+                    if (screen.orientation && screen.orientation.lock) {
+                        screen.orientation.lock('portrait').catch(() => {});
+                    }
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
 
     // === BACK BUTTON HANDLER ===
     useEffect(() => {
         const handleBackButton = async () => {
-            // Priority 0: Exit fullscreen if active
             if (document.fullscreenElement) {
                 await exitImmersiveMode();
                 return;
@@ -163,7 +167,12 @@ const AppContent = () => {
 
             if (isPlayerOpen) {
                 setIsPlayerOpen(false);
-                forcePortraitAndRefresh();
+                // Only refresh layout, don't reset scroll
+                await NavigationBar.show().catch(() => {});
+                await StatusBar.show().catch(() => {});
+                if (screen.orientation && screen.orientation.lock) {
+                    await screen.orientation.lock('portrait').catch(() => {});
+                }
                 return;
             }
 
@@ -205,7 +214,7 @@ const AppContent = () => {
         searchModalOpen, infoModalOpen, currentView,
         setIsPlayerOpen, closeDetail, setCategoryModal, 
         setSearchModalOpen, setInfoModalOpen, switchView,
-        forcePortraitAndRefresh, exitImmersiveMode
+        exitImmersiveMode
     ]);
 
     // === NAVIGATION CLICK HANDLER ===
@@ -214,6 +223,9 @@ const AppContent = () => {
             await exitImmersiveMode();
         }
         
+        // Update ref before switch
+        lastViewRef.current = view;
+        
         document.documentElement.style.scrollBehavior = 'auto';
         window.scrollTo(0, 0);
         switchView(view); 
@@ -221,13 +233,20 @@ const AppContent = () => {
     };
 
     useLayoutEffect(() => {
-        if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
-        window.scrollTo(0, 0);
-    }, [currentView]);
+        if ('scrollRestoration' in window.history) {
+            window.history.scrollRestoration = 'manual';
+        }
+        // Only scroll to top on initial mount or actual view change
+        if (!isInitializedRef.current) {
+            window.scrollTo(0, 0);
+            isInitializedRef.current = true;
+        }
+    }, []);
 
+    // Only run this on actual view changes, not on every render
     useEffect(() => {
-        if (!document.fullscreenElement) {
-            forcePortraitAndRefresh();
+        if (!document.fullscreenElement && isInitializedRef.current) {
+            forcePortraitAndRefresh(false);
         }
     }, [currentView, forcePortraitAndRefresh]);
 
@@ -237,10 +256,11 @@ const AppContent = () => {
         window.exitAppFullscreen = exitImmersiveMode;
     }, [enterImmersiveMode, exitImmersiveMode]);
 
-    // === INITIAL SETUP: Ensure nav bar is visible on app start ===
+    // === INITIAL SETUP ===
     useEffect(() => {
         NavigationBar.show().catch(() => {});
         StatusBar.show().catch(() => {});
+        isInitializedRef.current = true;
     }, []);
 
     const isHomeActive = currentView === 'home';

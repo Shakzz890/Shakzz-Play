@@ -7,19 +7,60 @@ import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { StatusBar } from '@capacitor/status-bar';
 import { NavigationBar } from '@capgo/capacitor-navigation-bar';
 
-const SECURE_WORKER_URL = import.meta.env.VITE_PROXY_BASE_URL;
+// 🛡️ ENVIRONMENT VARIABLES
+const WORKER_SERVERS = [
+    import.meta.env.VITE_PROXY_BASE_URL,
+    import.meta.env.VITE_PROXY_BACKUP_URL
+].filter(Boolean);
 
 const TABS = [
-    "all", 
-    "favorites", 
-    "news", 
-    "entertainment", 
-    "movies", 
-    "sports", 
-    "documentary", 
-    "cartoons & animations", 
-    "anime tagalog dubbed"
+    "all", "favorites", "news", "entertainment", 
+    "movies", "sports", "documentary", 
+    "cartoons & animations", "anime tagalog dubbed"
 ];
+
+// 🔐 10-MINUTE EXPIRING TOKEN GENERATOR
+const generateSecureToken = async () => {
+    const secret = import.meta.env.VITE_PROXY_SECRET_KEY || "shakzz_secure_core_2026_xyz";
+    const timeWindow = Math.floor(Date.now() / 600000); // 600,000 ms = 10 mins
+    const rawString = `${secret}-${timeWindow}`;
+
+    const encoder = new TextEncoder();
+    const data = encoder.encode(rawString);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
+// 🚀 AUTO-FAILOVER ENGINE (Now with Dynamic Tokens)
+const fetchWithFailover = async (endpoint) => {
+    let lastError;
+    
+    // Generate fresh token right before fetching
+    const currentToken = await generateSecureToken();
+    const headers = {
+        "X-Shakzz-Access-Token": currentToken
+    };
+
+    for (let i = 0; i < WORKER_SERVERS.length; i++) {
+        const serverUrl = WORKER_SERVERS[i];
+        try {
+            const response = await fetch(`${serverUrl}${endpoint}`, { headers });
+
+            // If Cloudflare hits the 100k limit (429) or crashes (500+), try the next server
+            if (response.status === 429 || response.status >= 500) {
+                console.warn(`[FAILOVER] Server ${i + 1} is unreachable. Switching to backup...`);
+                continue; 
+            }
+
+            return response; 
+        } catch (error) {
+            console.warn(`[FAILOVER] Network error on Server ${i + 1}:`, error);
+            lastError = error;
+        }
+    }
+    throw lastError || new Error("All proxy servers are currently offline.");
+};
 
 const Live = () => {
     const { currentView } = useGlobal();
@@ -72,20 +113,18 @@ const Live = () => {
         // === FETCH DATABASE FROM CLOUDFLARE ===
         const initLiveTV = async () => {
             try {
-                // Fetch full JSON DB from Worker fallback route
-                const dbRes = await fetch(SECURE_WORKER_URL);
+                // Uses Failover to get the main DB JSON
+                const dbRes = await fetchWithFailover('');
                 if (!dbRes.ok) throw new Error("Failed to load Cloudflare DB");
                 
                 const dbData = await dbRes.json();
                 const remoteChannels = dbData.channels || {};
                 const remoteAnime = dbData.animeData || {};
 
-                // Update app state
                 setChannels(remoteChannels);
                 setAnimeData(remoteAnime);
                 setIsDbLoading(false);
 
-                // Figure out which channel to auto-play first
                 const lastPlayed = localStorage.getItem("lastPlayedChannel");
                 let targetChannel = "";
                 if (lastPlayed && remoteChannels[lastPlayed]) {
@@ -94,7 +133,6 @@ const Live = () => {
                     targetChannel = remoteChannels['kapamilya'] ? 'kapamilya' : Object.keys(remoteChannels)[0];
                 }
 
-                // Initialize Player using the freshly fetched remote data
                 if (!window.jwplayer) {
                     const script = document.createElement('script');
                     script.src = "https://ssl.p.jwpcdn.com/player/v/8.38.10/jwplayer.js";
@@ -138,7 +176,7 @@ const Live = () => {
         } catch(e) {}
     }, [currentView, activeChannelKey]);
 
-    // --- PLAYER LOGIC (Accepts custom remote DB on first boot) ---
+    // --- PLAYER LOGIC ---
     const loadChannel = async (key, customData = null, dbRef = channels) => {
         const channelMeta = customData || dbRef[key];
         if (!channelMeta) return;
@@ -149,7 +187,8 @@ const Live = () => {
         let secureData = {};
         try {
             if (!customData) {
-                const response = await fetch(`${SECURE_WORKER_URL}/get-channel?id=${key}`);
+                // Uses Failover to fetch channel keys
+                const response = await fetchWithFailover(`/get-channel?id=${key}`);
                 if (!response.ok) throw new Error("Stream Offline");
                 secureData = await response.json();
             } else {
@@ -175,21 +214,11 @@ const Live = () => {
 
             let drmConfig = undefined;
             if (finalConfig.type === "clearkey" && finalConfig.keyId && finalConfig.key) {
-                drmConfig = { 
-                    clearkey: { 
-                        keyId: finalConfig.keyId, 
-                        key: finalConfig.key 
-                    } 
-                };
+                drmConfig = { clearkey: { keyId: finalConfig.keyId, key: finalConfig.key } };
             } else if (finalConfig.type === "widevine") {
-                drmConfig = { 
-                    widevine: { 
-                        url: finalConfig.licenseServerUri || finalConfig.key 
-                    } 
-                };
+                drmConfig = { widevine: { url: finalConfig.licenseServerUri || finalConfig.key } };
             }
 
-            // 1. SHOW BANNER BEFORE SETUP
             const loadingBanner = document.getElementById('stream-loading-banner');
             if (loadingBanner) {
                 loadingBanner.style.opacity = '1';
@@ -200,7 +229,6 @@ const Live = () => {
                 `;
             }
 
-            // 2. INITIALIZE PLAYER (Removed the background image property)
             const playerInstance = window.jwplayer("video").setup({
                 autostart: true,
                 width: "100%",
@@ -213,11 +241,7 @@ const Live = () => {
                 }]
             });
 
-            // 3. DYNAMIC BANNER EVENTS
-            playerInstance.on('play', () => {
-                if (loadingBanner) loadingBanner.style.opacity = '0'; // Hide when successfully playing
-            });
-
+            playerInstance.on('play', () => { if (loadingBanner) loadingBanner.style.opacity = '0'; });
             playerInstance.on('buffer', () => {
                 if (loadingBanner) {
                     loadingBanner.style.opacity = '1';
@@ -228,7 +252,6 @@ const Live = () => {
                     `;
                 }
             });
-
             playerInstance.on('error', () => {
                 if (loadingBanner) {
                     loadingBanner.style.opacity = '1';
@@ -266,7 +289,8 @@ const Live = () => {
             setAnimeEpisodes([]);
 
             try {
-                const response = await fetch(`${SECURE_WORKER_URL}/get-anime?title=${encodeURIComponent(title)}`);
+                // Uses Failover to fetch Anime links
+                const response = await fetchWithFailover(`/get-anime?title=${encodeURIComponent(title)}`);
                 
                 if (response.ok) {
                     const secureEpisodes = await response.json();
@@ -274,10 +298,7 @@ const Live = () => {
                     
                     const mergedList = localEpisodes.map((localEp, index) => {
                         const secureEp = secureEpisodes[index] || {};
-                        return {
-                            ...localEp,
-                            manifestUri: secureEp.manifestUri
-                        };
+                        return { ...localEp, manifestUri: secureEp.manifestUri };
                     });
 
                     setAnimeEpisodes(mergedList);
@@ -356,7 +377,6 @@ const Live = () => {
                         <div className="skeleton" style={{width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, background: '#000'}}></div>
                     </div>
 
-                    {/* --- NEW CUSTOM LOADING BANNER --- */}
                     <div id="stream-loading-banner" className="stream-loading-banner" style={{opacity: 0}}></div>
 
                     <div id="overlayContainer">

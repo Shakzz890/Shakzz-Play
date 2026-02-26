@@ -36,7 +36,7 @@ const infoContent = {
       <div class="update-item">
         <div class="update-header">
             <h3 class="update-title">🚀 Official Release v1.0</h3>
-            <span class="update-date">2026-02-22</span>
+            <span class="update-date">2026-02-27</span>
         </div>
         <p class="update-content">
             <strong>System Online:</strong> Shakzz Play is now officially live! After extensive beta testing, we're proud to deliver a stable, high-performance streaming experience.

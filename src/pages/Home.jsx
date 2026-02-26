@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useGlobal } from '../context/GlobalContext';
 import { fetchData, IMG_URL, POSTER_URL, PLACEHOLDER_IMG, getDisplayTitle } from '../api/tmdb';
 
-// --- MEMOIZED LIST ---
 const MovieList = React.memo(({ items, isUpcoming }) => {
     const { openDetail } = useGlobal();
 
@@ -55,6 +54,11 @@ const Home = () => {
     const [slideIndex, setSlideIndex] = useState(0);
     const [activeMenuId, setActiveMenuId] = useState(null);
     const sliderInterval = useRef(null);
+    
+    // YOUTUBE STYLE STATE
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [pullDistance, setPullDistance] = useState(0);
+    const touchStartY = useRef(0);
 
     const CATEGORY_ENDPOINTS = {
         'trending': '/trending/all/week',
@@ -67,45 +71,45 @@ const Home = () => {
         'upcoming': '/movie/upcoming?region=US'
     };
 
-    // --- INITIALIZATION ---
+    const fetchAllData = async () => {
+        try {
+            const [day, week, kr, cn, ph, anime, mov, tv, up] = await Promise.all([
+                fetchData('/trending/all/day'),
+                fetchData('/trending/all/week'),
+                fetchData('/discover/tv?with_original_language=ko&with_origin_country=KR&sort_by=popularity.desc'),
+                fetchData('/discover/tv?with_original_language=zh&with_origin_country=CN&sort_by=popularity.desc'),
+                fetchData('/discover/tv?with_original_language=tl&with_origin_country=PH&sort_by=popularity.desc'),
+                fetchData('/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc'),
+                fetchData('/movie/popular'),
+                fetchData('/tv/popular'),
+                fetchData('/movie/upcoming?region=US')
+            ]);
+
+            const globalHits = (day.results || []).filter(i => i.backdrop_path).slice(0, 5);
+            const kDramaHits = (kr.results || []).filter(i => i.backdrop_path).slice(0, 3);
+            setSliderItems([...globalHits, ...kDramaHits]);
+            
+            setLists({
+                trending: week.results || [],
+                kdrama: kr.results || [],
+                cdrama: cn.results || [],
+                filipino: ph.results || [],
+                anime: anime.results || [],
+                movies: mov.results || [],
+                tv: tv.results || [],
+                upcoming: up.results || []
+            });
+        } catch (e) { console.error("Error fetching data:", e); }
+    };
+
     useEffect(() => {
         const init = async () => {
             const hasInitialized = sessionStorage.getItem('shakzz_system_ready');
-
             if (!hasInitialized) {
                 showLoader("Initializing System...");
                 sessionStorage.setItem('shakzz_system_ready', 'true');
             }
-
-            try {
-                const [day, week, kr, cn, ph, anime, mov, tv, up] = await Promise.all([
-                    fetchData('/trending/all/day'),
-                    fetchData('/trending/all/week'),
-                    fetchData('/discover/tv?with_original_language=ko&with_origin_country=KR&sort_by=popularity.desc'),
-                    fetchData('/discover/tv?with_original_language=zh&with_origin_country=CN&sort_by=popularity.desc'),
-                    fetchData('/discover/tv?with_original_language=tl&with_origin_country=PH&sort_by=popularity.desc'),
-                    fetchData('/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc'),
-                    fetchData('/movie/popular'),
-                    fetchData('/tv/popular'),
-                    fetchData('/movie/upcoming?region=US')
-                ]);
-
-                const globalHits = (day.results || []).filter(i => i.backdrop_path).slice(0, 5);
-                const kDramaHits = (kr.results || []).filter(i => i.backdrop_path).slice(0, 3);
-                setSliderItems([...globalHits, ...kDramaHits]);
-                
-                setLists({
-                    trending: week.results || [],
-                    kdrama: kr.results || [],
-                    cdrama: cn.results || [],
-                    filipino: ph.results || [],
-                    anime: anime.results || [],
-                    movies: mov.results || [],
-                    tv: tv.results || [],
-                    upcoming: up.results || []
-                });
-            } catch (e) { console.error(e); }
-            
+            await fetchAllData();
             hideLoader();
         };
         init();
@@ -115,19 +119,58 @@ const Home = () => {
         return () => window.removeEventListener('click', closeMenu);
     }, []);
 
-    // --- SLIDER TIMER ---
-    useEffect(() => {
+    // --- EXACT YOUTUBE PHYSICS ---
+    const handleTouchStart = (e) => {
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        if (scrollTop <= 5) {
+            touchStartY.current = e.touches[0].clientY;
+        }
+    };
+
+    const handleTouchMove = (e) => {
+        if (touchStartY.current > 0) {
+            const currentY = e.touches[0].clientY;
+            const distance = currentY - touchStartY.current;
+            
+            if (distance > 0) {
+                // Slower drag resistance, max drop is 130px
+                setPullDistance(Math.min(distance * 0.5, 130)); 
+            }
+        }
+    };
+
+    const handleTouchEnd = async () => {
+        if (pullDistance > 80) { // Require a solid pull down
+            setIsRefreshing(true);
+            setPullDistance(100); // Lock it below the navbar while loading
+            
+            await fetchAllData();
+            
+            setIsRefreshing(false);
+            setPullDistance(0); // Shoot back up into hiding
+        } else {
+            setPullDistance(0); // Didn't pull far enough, hide it
+        }
+        touchStartY.current = 0;
+    };
+
+    const startSlider = useCallback(() => {
+        clearInterval(sliderInterval.current);
         if (sliderItems.length > 0) {
             sliderInterval.current = setInterval(() => {
                 setSlideIndex(prev => (prev + 1) % sliderItems.length);
             }, 5000);
         }
-        return () => clearInterval(sliderInterval.current);
     }, [sliderItems]);
 
+    useEffect(() => {
+        startSlider();
+        return () => clearInterval(sliderInterval.current);
+    }, [startSlider]);
+
     const moveSlider = (dir) => {
-        clearInterval(sliderInterval.current);
         setSlideIndex(prev => (prev + dir + sliderItems.length) % sliderItems.length);
+        startSlider(); 
     };
 
     const openCat = (key, title) => {
@@ -135,12 +178,9 @@ const Home = () => {
         if (endpoint) setCategoryModal({ isOpen: true, title, endpoint });
     };
 
-    // --- HANDLERS ---
-    
-    // NEW: Play slider item directly (skip detail view)
     const playSliderItem = (item) => {
-        setDetailItem(item);    // Set the item for player
-        setIsPlayerOpen(true);  // Open player directly
+        setDetailItem(item);
+        setIsPlayerOpen(true);
     };
 
     const playHistoryItem = (item) => {
@@ -166,8 +206,37 @@ const Home = () => {
     };
 
     return (
-        <div id="home-view">
-            
+        <div 
+            id="home-view" 
+            onTouchStart={handleTouchStart} 
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+        >
+            {/* 🔄 THE YOUTUBE BUBBLE (Moves independent of the content) */}
+            <div style={{
+                position: 'fixed',
+                top: -50, // Hides 50px above the screen
+                left: '50%',
+                width: '44px',
+                height: '44px',
+                borderRadius: '50%',
+                backgroundColor: '#fff',
+                boxShadow: '0 3px 12px rgba(0,0,0,0.4)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 99999, // Extremely high z-index
+                // Here is the magic: Translate X centers it, Translate Y pulls it down, Rotate spins it based on finger drag
+                transform: `translate(-50%, ${isRefreshing ? 120 : pullDistance}px) rotate(${pullDistance * 3}deg)`,
+                transition: isRefreshing || pullDistance === 0 ? 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)' : 'none',
+                opacity: pullDistance > 10 || isRefreshing ? 1 : 0
+            }}>
+                <i 
+                    className={`fa-solid ${isRefreshing ? 'fa-spinner fa-spin' : 'fa-arrow-down'}`} 
+                    style={{ fontSize: '1.2rem', color: isRefreshing ? 'var(--accent-color)' : '#333' }}
+                ></i>
+            </div>
+
             {/* SLIDER SECTION */}
             <div className="slider-viewport">
                 <div className="slider-track" style={{ transform: `translateX(-${slideIndex * 100}%)` }}>
@@ -183,11 +252,9 @@ const Home = () => {
                                 </div>
                                 <p className="slide-desc">{item.overview}</p>
                                 <div className="slide-actions">
-                                    {/* UPDATED: Play button now opens player directly */}
                                     <button className="slider-btn btn-play-slide" onClick={() => playSliderItem(item)}>
                                         <i className="fas fa-play"></i> Play
                                     </button>
-                                    {/* Details button still opens detail view */}
                                     <button className="slider-btn btn-info-slide" onClick={() => openDetail(item)}>
                                         <i className="fas fa-info-circle"></i> Details
                                     </button>
@@ -198,7 +265,7 @@ const Home = () => {
                 </div>
                 <div className="slider-dots">
                     {sliderItems.map((_, idx) => (
-                        <div key={idx} className={`dot ${idx === slideIndex ? 'active' : ''}`} onClick={() => setSlideIndex(idx)}></div>
+                        <div key={idx} className={`dot ${idx === slideIndex ? 'active' : ''}`} onClick={() => { setSlideIndex(idx); startSlider(); }}></div>
                     ))}
                 </div>
                 <button className="slider-arrow prev-arrow" onClick={() => moveSlider(-1)}><i className="fas fa-chevron-left"></i></button>
@@ -216,6 +283,7 @@ const Home = () => {
                                     <img 
                                         src={item.backdrop_path ? IMG_URL + item.backdrop_path : POSTER_URL + item.poster_path} 
                                         onError={(e) => e.target.src = PLACEHOLDER_IMG} 
+                                        alt={item.title || "Continue Watching"}
                                     />
                                     <div className="continue-play-icon"><i className="fas fa-play"></i></div>
                                     <div className="continue-ep-badge">{item.badge_label || 'Resume'}</div>
