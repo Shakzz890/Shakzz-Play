@@ -7,6 +7,9 @@ import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { StatusBar } from '@capacitor/status-bar';
 import { NavigationBar } from '@capgo/capacitor-navigation-bar';
 
+// 🚀 ADDED: Import the Background Mode Plugin
+import { BackgroundMode } from '@anuradev/capacitor-background-mode';
+
 // 🛡️ ENVIRONMENT VARIABLES
 const WORKER_SERVERS = [
     import.meta.env.VITE_PROXY_BASE_URL,
@@ -32,11 +35,10 @@ const generateSecureToken = async () => {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-// 🚀 AUTO-FAILOVER ENGINE (Now with Dynamic Tokens)
+// 🚀 AUTO-FAILOVER ENGINE
 const fetchWithFailover = async (endpoint) => {
     let lastError;
     
-    // Generate fresh token right before fetching
     const currentToken = await generateSecureToken();
     const headers = {
         "X-Shakzz-Access-Token": currentToken
@@ -47,7 +49,6 @@ const fetchWithFailover = async (endpoint) => {
         try {
             const response = await fetch(`${serverUrl}${endpoint}`, { headers });
 
-            // If Cloudflare hits the 100k limit (429) or crashes (500+), try the next server
             if (response.status === 429 || response.status >= 500) {
                 console.warn(`[FAILOVER] Server ${i + 1} is unreachable. Switching to backup...`);
                 continue; 
@@ -86,6 +87,30 @@ const Live = () => {
     const [animeEpisodes, setAnimeEpisodes] = useState([]);
     const [selectedAnimeTitle, setSelectedAnimeTitle] = useState("");
 
+    // 🚀 NEW: KEEP ALIVE LOGIC FOR LIVE TV
+    useEffect(() => {
+        const handleBackgroundMode = async () => {
+            try {
+                if (currentView === 'live') {
+                    // Turn on keep-alive if the user is on the Live tab
+                    await BackgroundMode.enable();
+                } else {
+                    // Turn it off if they switch to Home or Explore
+                    await BackgroundMode.disable();
+                }
+            } catch (err) {
+                console.log("Background mode error:", err);
+            }
+        };
+
+        handleBackgroundMode();
+
+        // Cleanup: Turn it off if the component is somehow destroyed
+        return () => {
+            BackgroundMode.disable().catch(() => {});
+        };
+    }, [currentView]);
+
     // --- INITIAL SETUP & CLOUDFLARE FETCH ---
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 1023);
@@ -110,10 +135,8 @@ const Live = () => {
         const countInterval = setInterval(updateCount, 5000);
         updateCount();
 
-        // === FETCH DATABASE FROM CLOUDFLARE ===
         const initLiveTV = async () => {
             try {
-                // Uses Failover to get the main DB JSON
                 const dbRes = await fetchWithFailover('');
                 if (!dbRes.ok) throw new Error("Failed to load Cloudflare DB");
                 
@@ -187,7 +210,6 @@ const Live = () => {
         let secureData = {};
         try {
             if (!customData) {
-                // Uses Failover to fetch channel keys
                 const response = await fetchWithFailover(`/get-channel?id=${key}`);
                 if (!response.ok) throw new Error("Stream Offline");
                 secureData = await response.json();
@@ -280,6 +302,114 @@ const Live = () => {
         }
     };
 
+    // --- ANIME EPISODE LOADER (FIXED) ---
+    const loadAnimeEpisode = async (episode) => {
+        if (!episode) return;
+        
+        const epName = episode.name || "Episode";
+        
+        // 1. Set active key IMMEDIATELY so the UI highlights the button even if it fails later
+        setActiveChannelKey(epName);
+        localStorage.setItem("lastPlayedChannel", epName);
+
+        // 2. Show loading banner immediately
+        const loadingBanner = document.getElementById('stream-loading-banner');
+        if (loadingBanner) {
+            loadingBanner.style.opacity = '1';
+            loadingBanner.innerHTML = `
+                <div class="spinner" style="margin: 0 0 15px 0 !important;"></div>
+                <h3>SHAKZZ PLAY</h3>
+                <p>Loading episode... please wait 3-5 seconds.</p>
+            `;
+        }
+
+        // Search for a stream URL across common keys just in case
+        let finalManifest = episode.manifestUri || episode.url || episode.file;
+
+        // 3. Graceful Error Handling: Notify the user instead of a silent console error
+        if (!finalManifest) {
+            console.error("Episode has no manifestUri:", episode);
+            if (loadingBanner) {
+                loadingBanner.innerHTML = `
+                    <h3 style="color: #ef4444; text-shadow: 0 0 15px rgba(239, 68, 68, 0.4);">STREAM ERROR</h3>
+                    <p>Unable to load episode link. Data might be incomplete.</p>
+                `;
+            }
+            return;
+        }
+
+        const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJTaGFrenoiLCJleHAiOjE3NjY5NTgzNTN9.RSc_LQ11txXXI0d7gZ8GvMOAwoHrWzUUr3CCQCM0Hco";
+        
+        // Add auth token if needed
+        if (finalManifest.includes("converse.nathcreqtives.com")) {
+            const separator = finalManifest.includes('?') ? '&' : '?';
+            finalManifest = `${finalManifest}${separator}token=${AUTH_TOKEN}`;
+        }
+
+        // Setup DRM if needed
+        let drmConfig = undefined;
+        if (episode.type === "clearkey" && episode.keyId && episode.key) {
+            drmConfig = { clearkey: { keyId: episode.keyId, key: episode.key } };
+        } else if (episode.type === "widevine") {
+            drmConfig = { widevine: { url: episode.licenseServerUri || episode.key } };
+        }
+
+        if (window.jwplayer) {
+            const playerInstance = window.jwplayer("video").setup({
+                autostart: true,
+                width: "100%",
+                height: "100%",
+                stretching: "exactfit",
+                playlist: [{
+                    file: finalManifest,
+                    type: episode.type === "mp4" ? "mp4" : (episode.type === "hls" ? "hls" : "dash"),
+                    drm: drmConfig
+                }]
+            });
+
+            playerInstance.on('play', () => { 
+                if (loadingBanner) loadingBanner.style.opacity = '0'; 
+            });
+            
+            playerInstance.on('buffer', () => {
+                if (loadingBanner) {
+                    loadingBanner.style.opacity = '1';
+                    loadingBanner.innerHTML = `
+                        <div class="spinner" style="margin: 0 0 15px 0 !important;"></div>
+                        <h3>SHAKZZ PLAY</h3>
+                        <p>Buffering stream... please wait.</p>
+                    `;
+                }
+            });
+            
+            playerInstance.on('error', () => {
+                if (loadingBanner) {
+                    loadingBanner.style.opacity = '1';
+                    loadingBanner.innerHTML = `
+                        <h3 style="color: #ef4444; text-shadow: 0 0 15px rgba(239, 68, 68, 0.4);">STREAM OFFLINE</h3>
+                        <p>Unable to load episode. Please try another one.</p>
+                    `;
+                }
+            });
+
+            playerInstance.on('fullscreen', async (event) => {
+                if (event.fullscreen) {
+                    try {
+                        await ScreenOrientation.lock({ orientation: 'landscape' });
+                        await StatusBar.hide();
+                        await NavigationBar.hide();
+                    } catch (e) {}
+                } else {
+                    try {
+                        await ScreenOrientation.lock({ orientation: 'portrait' });
+                        await StatusBar.show();
+                        await NavigationBar.show();
+                    } catch (e) {}
+                }
+            });
+        }
+    };
+
     const handleAnimeSelect = async (e) => {
         const title = e.target.value;
         setSelectedAnimeTitle(title);
@@ -289,25 +419,38 @@ const Live = () => {
             setAnimeEpisodes([]);
 
             try {
-                // Uses Failover to fetch Anime links
                 const response = await fetchWithFailover(`/get-anime?title=${encodeURIComponent(title)}`);
                 
                 if (response.ok) {
                     const secureEpisodes = await response.json();
                     const localEpisodes = animeData[title];
                     
+                    // FIXED: Safer merging logic so undefined server values don't break valid local values
                     const mergedList = localEpisodes.map((localEp, index) => {
-                        const secureEp = secureEpisodes[index] || {};
-                        return { ...localEp, manifestUri: secureEp.manifestUri };
+                        const secureEp = secureEpisodes[index];
+                        
+                        let streamUrl = localEp.manifestUri || localEp.file || localEp.url;
+                        
+                        if (typeof secureEp === 'string') {
+                            streamUrl = secureEp; 
+                        } else if (secureEp && typeof secureEp === 'object') {
+                            streamUrl = secureEp.manifestUri || secureEp.file || secureEp.url || streamUrl;
+                        }
+
+                        return { 
+                            ...localEp, 
+                            ...(typeof secureEp === 'object' ? secureEp : {}),
+                            manifestUri: streamUrl 
+                        };
                     });
 
                     setAnimeEpisodes(mergedList);
                 } else {
-                    setAnimeEpisodes([]);
+                    setAnimeEpisodes(animeData[title]); // Fallback to raw local data if secure fetch fails
                 }
             } catch (error) {
                 console.error("Anime Fetch Error:", error);
-                setAnimeEpisodes([]);
+                setAnimeEpisodes(animeData[title]); // Fallback
             } finally {
                 setIsAnimeLoading(false);
             }
@@ -381,11 +524,11 @@ const Live = () => {
 
                     <div id="overlayContainer">
                         <div id="nowPlayingOverlay">
-                            <span className="pulsing-dot"></span>
-                            Now Playing: <span id="nowPlayingChannel">
-                                {isAnimeTab ? (activeChannelKey || "Select Episode") : (channels[activeChannelKey]?.name || "Select Channel")}
-                            </span>
-                        </div>
+    <span className="pulsing-dot"></span>
+    Now Playing: <span id="nowPlayingChannel">
+        {activeChannelKey ? (channels[activeChannelKey]?.name || activeChannelKey) : "Select Channel"}
+    </span>
+</div>
                     </div>
                 </div>
             </div>
@@ -484,13 +627,13 @@ const Live = () => {
                         {!isDbLoading && isAnimeTab && animeEpisodes.map((ep, idx) => (
                             <div 
                                 key={idx} 
-                                className={`channel-button focusable-element ${activeChannelKey === ep.name ? 'active' : ''}`}
-                                onClick={() => loadChannel(null, ep)}
+                                className={`channel-button focusable-element ${activeChannelKey === (ep.name || "Episode") ? 'active' : ''}`}
+                                onClick={() => loadAnimeEpisode(ep)}
                             >
                                 <div className="channel-logo">
                                     <img src={ep.logo} loading="lazy" onError={(e) => e.target.src = PLACEHOLDER_IMG} style={{objectFit: 'cover'}}/>
                                 </div>
-                                <div className="channel-name">{ep.name}</div>
+                                <div className="channel-name">{ep.name || `Episode ${idx + 1}`}</div>
                             </div>
                         ))}
                     </div>

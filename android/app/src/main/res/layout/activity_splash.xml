@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="#0B001A">
+
+    <ImageView
+        android:id="@+id/splash_logo"
+        android:layout_width="288dp"
+        android:layout_height="288dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/logo_with_text"
+        android:contentDescription="Shakzz Play Splash Screen" />
+
+</LinearLayout>

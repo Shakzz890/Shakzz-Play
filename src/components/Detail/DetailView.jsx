@@ -38,7 +38,16 @@ const DetailView = () => {
     };
 
     const isAdded = watchlist.some(i => i.id === detailItem.id);
-    const typeLabel = detailItem.media_type === 'tv' || detailItem.first_air_date ? 'TV Series' : 'Movie';
+    const isTv = detailItem.media_type === 'tv' || detailItem.first_air_date;
+    const typeLabel = isTv ? 'TV Series' : 'Movie';
+
+    // 🚀 NEW: Helper to determine Series Status from fullDetails
+    const getSeriesStatus = () => {
+        if (!fullDetails || !fullDetails.status) return 'ONGOING';
+        const status = fullDetails.status.toLowerCase();
+        if (status === 'ended' || status === 'canceled') return 'ENDED';
+        return 'ONGOING';
+    };
 
     return (
         <div id="detail-view" className="page-view detail-page active">
@@ -73,6 +82,23 @@ const DetailView = () => {
                         <h1 id="detail-title">{getDisplayTitle(detailItem)}</h1>
                         
                         <div className="detail-meta-row">
+                            {/* 🚀 ADDED: Ongoing / Ended Badge (Only shows for TV Shows once details load) */}
+                            {isTv && fullDetails && fullDetails.status && (
+                                <>
+                                    <span style={{ 
+                                        color: getSeriesStatus() === 'ONGOING' ? '#46d369' : '#ef4444', 
+                                        fontWeight: 'bold', 
+                                        border: '1px solid', 
+                                        padding: '2px 6px', 
+                                        borderRadius: '4px', 
+                                        fontSize: '0.7rem' 
+                                    }}>
+                                        {getSeriesStatus()}
+                                    </span>
+                                    <span className="dot-sep"></span>
+                                </>
+                            )}
+                            
                             <span>{(detailItem.release_date || detailItem.first_air_date || 'N/A').split('-')[0]}</span>
                             <span className="dot-sep"></span>
                             <span className="rating-box"><i className="fas fa-star"></i> {detailItem.vote_average?.toFixed(1)}</span>
@@ -81,7 +107,8 @@ const DetailView = () => {
                         </div>
 
                         <div className="genre-pills-row">
-                            {fullDetails?.genres?.slice(0, 3).map(g => (
+                            {/* 🚀 REFACTOR: Replaced mapping over a sliced array, using map directly on fullDetails.genres */}
+                            {fullDetails?.genres?.map(g => (
                                 <span key={g.id} className="genre-pill">{g.name}</span>
                             ))}
                         </div>
@@ -97,7 +124,7 @@ const DetailView = () => {
                             </button>
                             
                             <button className="watchlist-btn" onClick={() => toggleWatchlist(detailItem)}>
-                                <i className={isAdded ? "fas fa-check" : "fas fa-plus"}></i> {isAdded ? "List" : "List"}
+                                <i className={isAdded ? "fas fa-check" : "fas fa-plus"}></i> {isAdded ? "Added" : "List"}
                             </button>
                         </div>
                     </div>

@@ -1,7 +1,7 @@
 {
   "name": "shakzz-tv",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,12 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@anuradev/capacitor-background-mode": "^7.2.1",
     "@capacitor-firebase/authentication": "^6.3.1",
     "@capacitor/android": "^6.0.0",
     "@capacitor/app": "^6.0.3",
     "@capacitor/browser": "^6.0.6",
     "@capacitor/core": "^6.0.0",
     "@capacitor/screen-orientation": "^6.0.0",
+    "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.1",
     "@capawesome/capacitor-app-update": "^6.1.0",
     "@capgo/capacitor-navigation-bar": "^8.0.20",

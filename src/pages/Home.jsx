@@ -2,6 +2,9 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useGlobal } from '../context/GlobalContext';
 import { fetchData, IMG_URL, POSTER_URL, PLACEHOLDER_IMG, getDisplayTitle } from '../api/tmdb';
 
+// 🚀 ADDED: Import Capacitor Browser for external links
+import { Browser } from '@capacitor/browser';
+
 const MovieList = React.memo(({ items, isUpcoming }) => {
     const { openDetail } = useGlobal();
 
@@ -205,6 +208,17 @@ const Home = () => {
         setActiveMenuId(null);
     };
 
+    // 🚀 NEW: Helper function to open links externally
+    const openExternalLink = async (e, url) => {
+        e.preventDefault();
+        try {
+            await Browser.open({ url: url });
+        } catch (error) {
+            // Fallback for desktop browsers testing
+            window.open(url, '_blank');
+        }
+    };
+
     return (
         <div 
             id="home-view" 
@@ -357,14 +371,21 @@ const Home = () => {
                             <div className="footer-col">
                                 <span className="col-title">FOLLOW US</span>
                                 <div className="social-row">
-                                    <a href="https://www.facebook.com/share/1BzwhDsGmT/ " target="_blank" rel="noreferrer"><i className="fa-brands fa-facebook-f"></i></a>
-                                    <a href="https://www.instagram.com/shakzzph?igsh=MTR4enRzbjJ4aWh5MQ== " target="_blank" rel="noreferrer"><i className="fa-brands fa-instagram"></i></a>
-                                    <a href="https://www.tiktok.com/@shxkzz05?_r=1&_t=ZS-939s4GLBc28 " target="_blank" rel="noreferrer"><i className="fa-brands fa-tiktok"></i></a>
+                                    {/* 🚀 REFACTOR: Changed standard links to use openExternalLink */}
+                                    <a href="#" onClick={(e) => openExternalLink(e, "https://www.facebook.com/share/1BzwhDsGmT/")}>
+                                        <i className="fa-brands fa-facebook-f"></i>
+                                    </a>
+                                    <a href="#" onClick={(e) => openExternalLink(e, "https://www.instagram.com/shakzzph?igsh=MTR4enRzbjJ4aWh5MQ==")}>
+                                        <i className="fa-brands fa-instagram"></i>
+                                    </a>
+                                    <a href="#" onClick={(e) => openExternalLink(e, "https://www.tiktok.com/@shakzz05?is_from_webapp=1&sender_device=pc")}>
+                                        <i className="fa-brands fa-tiktok"></i>
+                                    </a>
                                 </div>
                                 
                                 <span className="col-title" style={{marginTop:'25px'}}>JOIN COMMUNITY</span>
                                 <div className="social-row">
-                                    <a href="https://discord.gg/k8AJ9dWzb " target="_blank" rel="noreferrer" title="Join Discord">
+                                    <a href="#" onClick={(e) => openExternalLink(e, "https://discord.gg/K2VhJxAmvX")} title="Join Discord">
                                         <i className="fa-brands fa-discord"></i>
                                     </a>
                                 </div>

@@ -33,6 +33,24 @@ const infoContent = {
         </div>
     `,
     updates: `
+    <div class="update-item">
+        <div class="update-header">
+            <h3 class="update-title">✨ Update v1.1 - Speed & UI Enhancements</h3>
+            <span class="update-date">2026-03-16</span>
+        </div>
+        <p class="update-content">
+            <strong>Leveling Up:</strong> We've been hard at work under the hood! This update focuses massively on performance, getting you into your favorite shows faster than ever, and bringing some highly requested quality-of-life features to the library.
+            <br><br>
+            <strong>What's New:</strong>
+            <br>• Added a seamless, native splash screen for instant app startup.
+            <br>• Removed the initial system loading screen to drastically boost launch speeds and overall performance.
+            <br>• Refactored the bottom navigation bar for smoother transitions and better usability.
+            <br>• Introduced "Ongoing" and "Ended" status badges for series so you know exactly where a show stands.
+            <br>• Added new episode availability tracking (instantly see if a new episode is out!).
+            <br>• Fixed an issue preventing the Anime Tagalog Dubbed category from loading properly.
+            <br><br>
+        </p>
+    </div>
       <div class="update-item">
         <div class="update-header">
             <h3 class="update-title">🚀 Official Release v1.0</h3>

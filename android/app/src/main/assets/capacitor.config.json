@@ -13,7 +13,13 @@
 	},
 	"plugins": {
 		"SplashScreen": {
-			"launchShowDuration": 0
+			"launchShowDuration": 3000,
+			"launchAutoHide": false,
+			"backgroundColor": "#050505",
+			"androidSplashResourceName": "splash",
+			"androidScaleType": "CENTER_CROP",
+			"splashFullScreen": true,
+			"splashImmersive": true
 		},
 		"FirebaseAuthentication": {
 			"skipNativeAuth": false,

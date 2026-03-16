@@ -1,5 +1,9 @@
 [
 	{
+		"pkg": "@anuradev/capacitor-background-mode",
+		"classpath": "ar.com.anura.plugins.backgroundmode.BackgroundModePlugin"
+	},
+	{
 		"pkg": "@capacitor-firebase/authentication",
 		"classpath": "io.capawesome.capacitorjs.plugins.firebase.authentication.FirebaseAuthenticationPlugin"
 	},
@@ -14,6 +18,10 @@
 	{
 		"pkg": "@capacitor/screen-orientation",
 		"classpath": "com.capacitorjs.plugins.screenorientation.ScreenOrientationPlugin"
+	},
+	{
+		"pkg": "@capacitor/splash-screen",
+		"classpath": "com.capacitorjs.plugins.splashscreen.SplashScreenPlugin"
 	},
 	{
 		"pkg": "@capacitor/status-bar",

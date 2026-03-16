@@ -6,18 +6,13 @@ import { fetchData } from "../../api/tmdb";
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { StatusBar } from '@capacitor/status-bar';
 import { NavigationBar } from '@capgo/capacitor-navigation-bar';
+// 🚀 ADDED: Import the Background Mode Plugin
+import { BackgroundMode } from '@anuradev/capacitor-background-mode';
 
 const servers = [
-  // YOUR DEFAULT SERVER (Kept as Server 1)
   { name: "Server 1", forceSandbox: false, getUrl: (id, type, s, e) => `https://vidsrc.cc/v2/embed/${type}/${id}${type === "tv" ? `/${s}/${e}?autoPlay=false&poster=true` : "?autoPlay=false&poster=true"}` },
-  
-  // YOUR SERVER 2
   { name: "Server 2", forceSandbox: false, getUrl: (id, type, s, e) => `https://zxcstream.xyz/embed/${type}/${id}${type === "tv" ? `/${s}/${e}` : ""}` },
-  
-  // --- NEW ADDITION (After 2) ---
   { name: "Server 3", forceSandbox: false, getUrl: (id, type, s, e) => type === "movie" ? `https://vidsrc.to/embed/movie/${id}` : `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
-
-  // Renumbered the rest of your list
   { name: "Server 4", forceSandbox: true, getUrl: (id, type, s, e) => type === "movie" ? `https://fmovies4u.com/embed/movie/${id}` : `https://fmovies4u.com/embed/tv/${id}/${s}/${e}` },
   { name: "Server 5", forceSandbox: false, getUrl: (id, type, s, e) => `https://vidsrc.cx/embed/${type}/${id}${type === "tv" ? `/${s}/${e}` : ""}` },
   { name: "Server 6 (Ads)", forceSandbox: true, getUrl: (id, type, s, e) => `https://mapple.uk/watch/${type}/${id}${type === "tv" ? `-${s}-${e}` : ""}` },
@@ -30,8 +25,12 @@ export default function PlayerView() {
   const type = isTv ? "tv" : "movie";
 
   const [serverIdx, setServerIdx] = useState(0);
-  const [season, setSeason] = useState(1);
-  const [episode, setEpisode] = useState(1);
+  
+  // 🚀 REFACTOR: Split Playing State vs Viewing State
+  const [playingSeason, setPlayingSeason] = useState(1);
+  const [playingEpisode, setPlayingEpisode] = useState(1);
+  const [viewingSeason, setViewingSeason] = useState(1);
+
   const [seasons, setSeasons] = useState([]);
   const [episodes, setEpisodes] = useState([]);
   const [epSearch, setEpSearch] = useState("");
@@ -40,7 +39,7 @@ export default function PlayerView() {
   const [showServerMenu, setShowServerMenu] = useState(false);
   const dropdownRef = useRef(null);
 
-  const sandboxKey = useMemo(() => detailItem ? `sandbox_${detailItem.id}_${season}_${episode}_${serverIdx}` : null, [detailItem, season, episode, serverIdx]);
+  const sandboxKey = useMemo(() => detailItem ? `sandbox_${detailItem.id}_${playingSeason}_${playingEpisode}_${serverIdx}` : null, [detailItem, playingSeason, playingEpisode, serverIdx]);
   const [sandbox, setSandbox] = useState(true);
   const [iframeKey, setIframeKey] = useState(0);
 
@@ -72,18 +71,16 @@ export default function PlayerView() {
                            document.msFullscreenElement;
 
       if (isFullscreen) {
-        // --- ENTER FULLSCREEN: Lock Landscape & Hide Bars ---
         try {
           await ScreenOrientation.lock({ orientation: 'landscape' });
           await StatusBar.hide();
-          await NavigationBar.hide(); // Hides Android bottom buttons
+          await NavigationBar.hide(); 
         } catch (e) { console.error("Fullscreen Enter Error:", e); }
       } else {
-        // --- EXIT FULLSCREEN: Lock Portrait & Show Bars ---
         try {
           await ScreenOrientation.lock({ orientation: 'portrait' });
           await StatusBar.show();
-          await NavigationBar.show(); // Shows Android bottom buttons
+          await NavigationBar.show(); 
         } catch (e) { console.error("Fullscreen Exit Error:", e); }
       }
     };
@@ -99,17 +96,36 @@ export default function PlayerView() {
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       document.removeEventListener('msfullscreenchange', handleFullscreenChange);
       
-      // Cleanup: Reset to defaults on unmount
       ScreenOrientation.lock({ orientation: 'portrait' }).catch(() => {});
       StatusBar.show().catch(() => {});
       NavigationBar.show().catch(() => {});
     };
   }, []);
 
+  // 🚀 NEW: KEEP ALIVE LOGIC (PREVENTS 30-SECOND APP RESET)
+  useEffect(() => {
+    if (!isPlayerOpen) return;
+
+    const keepAlive = async () => {
+      try {
+        // Tells Android: "Do not kill this app, we are running a background task!"
+        await BackgroundMode.enable();
+      } catch (err) {
+        console.log("Background mode error:", err);
+      }
+    };
+
+    keepAlive();
+
+    // Cleanup: Turn it off when the user closes the video to save battery
+    return () => {
+      BackgroundMode.disable().catch(() => {});
+    };
+  }, [isPlayerOpen]);
+
   // ESC key handler
   useEffect(() => {
     if (!isPlayerOpen) return;
-    
     const handleEsc = (e) => {
       if (e.key === 'Escape') setIsPlayerOpen(false);
     };
@@ -142,8 +158,11 @@ export default function PlayerView() {
             startEpisode = parseInt(match[2]);
         }
     }
-    setSeason(startSeason);
-    setEpisode(startEpisode);
+    
+    setPlayingSeason(startSeason);
+    setPlayingEpisode(startEpisode);
+    setViewingSeason(startSeason); // Set initial viewed season to match playing season
+
     setShowDesc(false);
     setShowServerMenu(false);
 
@@ -167,28 +186,38 @@ export default function PlayerView() {
       } catch(e) { return {}; }
   };
 
+  // 🚀 REFACTOR: Only changes the grid, not the video
   const handleSeasonChange = async (newSeason) => {
-    setSeason(newSeason);
-    setEpisode(1);
+    setViewingSeason(newSeason); 
     const d = await fetchData(`/tv/${detailItem.id}/season/${newSeason}`);
     setEpisodes(d.episodes || []);
-    addToHistory(detailItem, newSeason, 1);
   };
 
+  // 🚀 REFACTOR: Changes the video when an episode is clicked
   const handleEpisodeChange = (newEp) => {
-    setEpisode(newEp);
-    addToHistory(detailItem, season, newEp);
+    setPlayingSeason(viewingSeason); // Sync playing season to what they are looking at
+    setPlayingEpisode(newEp);
+    addToHistory(detailItem, viewingSeason, newEp);
   };
 
   if (!isPlayerOpen || !detailItem) return null;
 
-  const src = servers[serverIdx].getUrl(detailItem.id, type, season, episode);
+  // Use playingSeason and playingEpisode for the video frame
+  const src = servers[serverIdx].getUrl(detailItem.id, type, playingSeason, playingEpisode);
   
   const filteredEpisodes = episodes.filter(ep => 
     !epSearch || 
     ep.episode_number.toString() === epSearch || 
     (ep.name && ep.name.toLowerCase().includes(epSearch.toLowerCase()))
   );
+
+  // Helper to determine Series Status
+  const getSeriesStatus = () => {
+    if (!isTv) return 'Movie';
+    const status = detailItem.status?.toLowerCase();
+    if (status === 'ended' || status === 'canceled') return 'Ended';
+    return 'Ongoing';
+  };
 
   return (
     <div className="player-page-view active">
@@ -214,10 +243,16 @@ export default function PlayerView() {
         <aside className="sidebar-section">
           <div className="sidebar-content">
             <h2 className="sidebar-title">{detailItem.title || detailItem.name}</h2>
+            
+            {/* 🚀 ADDED: Ongoing / Ended Status in Meta */}
             <div className="sidebar-meta">
+                <span style={{ 
+                    color: getSeriesStatus() === 'Ongoing' ? '#46d369' : '#ef4444', 
+                    fontWeight: 'bold', border: '1px solid', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' 
+                }}>
+                    {getSeriesStatus().toUpperCase()}
+                </span>
                 <span>{detailItem.release_date?.split('-')[0] || detailItem.first_air_date?.split('-')[0] || 'N/A'}</span>
-                <span className="dot"></span>
-                <span>{isTv ? 'TV Series' : 'Movie'}</span>
                 <span className="dot"></span>
                 <span>{detailItem.vote_average ? detailItem.vote_average.toFixed(1) : 'N/A'} <i className="fas fa-star" style={{color:'gold', fontSize:'0.7rem'}}></i></span>
             </div>
@@ -286,13 +321,13 @@ export default function PlayerView() {
                   </div>
                 </div>
 
-                {/* SEASON SELECTOR */}
+                {/* 🚀 REFACTOR: Uses viewingSeason instead of season */}
                 {isTv && (
                     <div className="control-item">
                         <label>Season</label>
                         <select 
                             className="dark-select"
-                            value={season}
+                            value={viewingSeason}
                             onChange={(e) => handleSeasonChange(+e.target.value)}
                         >
                             {seasons.map(s => <option key={s.id} value={s.season_number}>Season {s.season_number}</option>)}
@@ -322,16 +357,38 @@ export default function PlayerView() {
                   {filteredEpisodes.length === 0 ? (
                     <div className="no-ep-msg">No episodes found</div>
                   ) : (
-                    filteredEpisodes.map(ep => (
-                      <button
-                        key={ep.id}
-                        className={`ep-btn ${episode === ep.episode_number ? "active" : ""}`}
-                        onClick={() => handleEpisodeChange(ep.episode_number)}
-                        title={ep.name}
-                      >
-                        {ep.episode_number}
-                      </button>
-                    ))
+                    filteredEpisodes.map(ep => {
+                      // 🚀 REFACTOR: Check if this exact season & episode is playing right now
+                      const isPlaying = playingSeason === viewingSeason && playingEpisode === ep.episode_number;
+                      
+                      // 🚀 ADDED: Check if episode has aired
+                      const isOut = ep.air_date ? new Date(ep.air_date) <= new Date() : false;
+
+                      return (
+                        <button
+                          key={ep.id}
+                          className={`ep-btn ${isPlaying ? "active" : ""}`}
+                          onClick={() => handleEpisodeChange(ep.episode_number)}
+                          title={ep.name}
+                          style={{ position: 'relative' }} // For badge positioning
+                        >
+                          {ep.episode_number}
+                          
+                          {/* 🚀 ADDED: OUT Badge for newly aired episodes */}
+                          {isOut && (
+                              <span style={{
+                                  position: 'absolute', top: '-4px', right: '-4px', 
+                                  background: 'var(--accent-color)', color: '#fff', 
+                                  fontSize: '0.5rem', padding: '2px 4px', 
+                                  borderRadius: '4px', fontWeight: 'bold',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                              }}>
+                                OUT
+                              </span>
+                          )}
+                        </button>
+                      );
+                    })
                   )}
                 </div>
               </>

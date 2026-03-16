@@ -1,14 +1,20 @@
+// src/App.jsx
 import React, { useLayoutEffect, useEffect, useCallback, useRef } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { StatusBar } from '@capacitor/status-bar';
 import { NavigationBar } from '@capgo/capacitor-navigation-bar';
+import { SplashScreen } from '@capacitor/splash-screen'; // 🚀 ADDED SPLASH SCREEN
 import { GlobalProvider, useGlobal } from './context/GlobalContext';
+
+// --- NEW: IMPORT NORIGIN SPATIAL NAVIGATION ---
+import { init, useFocusable } from '@noriginmedia/norigin-spatial-navigation';
+
+// Input Manager for TV/Desktop Navigation
+import { InputProvider, useInput } from './utils/InputManager';
 
 // Layout Imports
 import Navbar from './components/Layout/Navbar';
-import Sidebar from './components/Layout/Sidebar';
 import InfoModal from './components/Layout/InfoView';
-import Loader from './components/Layout/Loader'; 
 
 // Pages
 import Home from './pages/Home';
@@ -20,14 +26,66 @@ import DetailView from './components/Detail/DetailView';
 import PlayerOverlay from './components/Detail/PlayerView';
 import CategoryView from './components/Category/CategoryView';
 import SearchModal from './components/Search/SearchModal';
-
 import UpdateDialog from './components/UpdateDialog';
+
+// ==========================================================================
+// 🚀 INITIALIZE THE SPATIAL NAVIGATION ENGINE
+// ==========================================================================
+init({
+    debug: false,
+    visualDebug: false, 
+    distanceCalculationMethod: 'corners'
+});
+
+// ==========================================================================
+// 🚀 SMART NAV ITEM COMPONENT (UPDATED FOR HYBRID CLICKS)
+// ==========================================================================
+const SmartNavItem = ({ item, isActive, onAction, isTV }) => {
+    const { ref, focused, setFocus } = useFocusable({
+        onEnterPress: () => onAction(item),
+        focusKey: `nav-${item.id}` 
+    });
+
+    return (
+        <div
+            ref={ref}
+            className={`nav-item ${isActive ? 'active' : ''} ${focused ? 'tv-focused' : ''}`}
+            // 🚀 USE onPointerDown INSTEAD OF onClick TO BYPASS TV ENGINE
+            onPointerDown={(e) => {
+                e.preventDefault(); 
+                e.stopPropagation();
+                
+                // Only hijack focus if we are actually on a TV
+                if (isTV) {
+                    setFocus();
+                }
+                
+                onAction(item); 
+            }}
+            // Keep onClick as a fallback but stop it from bubbling up
+            onClick={(e) => e.stopPropagation()}
+            role="tab"
+            aria-selected={isActive}
+            aria-label={item.label}
+            style={{ cursor: 'pointer', zIndex: 9999, position: 'relative' }}
+        >
+            <div className="icon-container">
+                <i className={`fa-solid ${item.icon}`} aria-hidden="true"></i>
+            </div>
+            <span>{item.label}</span>
+            {isTV && focused && (
+                <span className="nav-hint" style={{position: 'absolute', top: '-20px', fontSize: '10px', background: 'var(--accent-color)', padding: '2px 6px', borderRadius: '4px', color: '#fff'}}>OK</span>
+            )}
+        </div>
+    );
+};
 
 const AppContent = () => {
     const { 
         isOffline,
         currentView, 
         switchView,
+        toggleSidebar, 
         isPlayerOpen, setIsPlayerOpen,
         isDetailOpen, closeDetail,
         categoryModal, setCategoryModal,
@@ -35,11 +93,56 @@ const AppContent = () => {
         infoModalOpen, setInfoModalOpen
     } = useGlobal();
 
-    // Track if we've already initialized to prevent double-calls
+    const { platform, goBack, containerRef } = useInput();
+
+    // Focus engine control
+    const { focusKey, focusSelf, setFocus } = useFocusable({
+        trackChildren: true,
+        autoRestoreFocus: true,
+        isFocusBoundary: false
+    });
+
     const isInitializedRef = useRef(false);
     const lastViewRef = useRef(currentView);
 
-    // === IMMERSIVE FULLSCREEN MODE using capgo-navigation-bar ===
+    // === SYSTEM STARTUP AUDIO & SPLASH HIDE ===
+    useEffect(() => {
+        // 1. Hide the native splash screen ONLY after React is completely ready and dark theme is drawn
+        SplashScreen.hide().catch(() => {});
+
+        // 2. Startup Audio Logic
+        const startupAudio = new Audio('/assets/sounds/system_open.mp3');
+        startupAudio.volume = 0.5;
+
+        // Try playing immediately
+        startupAudio.play().catch((err) => {
+            console.log("Autoplay blocked by Android WebView. Waiting for first interaction...");
+            
+            // If blocked, wait for the user to tap the screen anywhere
+            const playOnFirstTap = () => {
+                startupAudio.play().catch(() => {});
+                // Remove listeners instantly so it doesn't play twice
+                document.removeEventListener('touchstart', playOnFirstTap);
+                document.removeEventListener('mousedown', playOnFirstTap);
+            };
+            
+            document.addEventListener('touchstart', playOnFirstTap, { once: true });
+            document.addEventListener('mousedown', playOnFirstTap, { once: true });
+        });
+
+        return () => {
+            startupAudio.pause();
+        };
+    }, []);
+    
+    // Nav Items (Menu removed to allow equal stretching)
+    const navItems = [
+        { id: 'home', label: 'Home', icon: 'fa-house', view: 'home' },
+        { id: 'explore', label: 'Explore', icon: 'fa-compass', view: 'explore' },
+        { id: 'live', label: 'Live TV', icon: 'fa-tv', view: 'live' },
+    ];
+
+    // === IMMERSIVE FULLSCREEN MODE ===
     const enterImmersiveMode = useCallback(async () => {
         try {
             await NavigationBar.hide();
@@ -81,9 +184,8 @@ const AppContent = () => {
         }
     }, []);
 
-    // === SAFE REFRESH - Only when needed, not on Alt+Tab ===
+    // === SAFE REFRESH ===
     const forcePortraitAndRefresh = useCallback(async (isFromVisibilityChange = false) => {
-        // Skip aggressive refresh if coming from visibility change (Alt+Tab)
         if (isFromVisibilityChange) {
             await NavigationBar.show().catch(() => {});
             await StatusBar.show().catch(() => {});
@@ -99,11 +201,8 @@ const AppContent = () => {
         
         try {
             await screen.orientation.lock('portrait');
-        } catch (e) {
-            // Ignore lock errors
-        }
+        } catch (e) {}
         
-        // Only scroll to top on actual view changes, not on every refresh
         if (lastViewRef.current !== currentView) {
             window.scrollTo(0, 0);
             lastViewRef.current = currentView;
@@ -114,11 +213,9 @@ const AppContent = () => {
     useEffect(() => {
         const handleFullscreenChange = async () => {
             const isFullscreen = !!document.fullscreenElement;
-            
             if (!isFullscreen) {
                 await NavigationBar.show().catch(() => {});
                 await StatusBar.show().catch(() => {});
-                // Don't call forcePortraitAndRefresh here - let visibility handler deal with it
             } else {
                 await NavigationBar.hide().catch(() => {});
                 await StatusBar.hide().catch(() => {});
@@ -134,15 +231,13 @@ const AppContent = () => {
         };
     }, []);
 
-    // === VISIBILITY CHANGE HANDLER - Fixed for Alt+Tab ===
+    // === VISIBILITY CHANGE HANDLER ===
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
-                // Just ensure nav bars are visible, DON'T reset scroll or re-render
                 NavigationBar.show().catch(() => {});
                 StatusBar.show().catch(() => {});
                 
-                // Only force portrait if not in fullscreen
                 if (!document.fullscreenElement) {
                     if (screen.orientation && screen.orientation.lock) {
                         screen.orientation.lock('portrait').catch(() => {});
@@ -157,9 +252,9 @@ const AppContent = () => {
         };
     }, []);
 
-    // === BACK BUTTON HANDLER ===
+    // === TV BACK BUTTON HANDLER ===
     useEffect(() => {
-        const handleBackButton = async () => {
+        const handleTVBack = async (e) => {
             if (document.fullscreenElement) {
                 await exitImmersiveMode();
                 return;
@@ -167,7 +262,49 @@ const AppContent = () => {
 
             if (isPlayerOpen) {
                 setIsPlayerOpen(false);
-                // Only refresh layout, don't reset scroll
+                await NavigationBar.show().catch(() => {});
+                await StatusBar.show().catch(() => {});
+                if (screen.orientation && screen.orientation.lock) {
+                    await screen.orientation.lock('portrait').catch(() => {});
+                }
+                focusSelf();
+                return;
+            }
+
+            if (isDetailOpen) { closeDetail(); focusSelf(); return; }
+            if (categoryModal.isOpen) { setCategoryModal(prev => ({ ...prev, isOpen: false })); focusSelf(); return; }
+            if (searchModalOpen) { setSearchModalOpen(false); focusSelf(); return; }
+            if (infoModalOpen) { setInfoModalOpen(false); focusSelf(); return; }
+
+            const wentBack = goBack();
+            if (!wentBack && currentView !== 'home') {
+                switchView('home');
+                setFocus('nav-home'); 
+            }
+        };
+
+        window.addEventListener('tv-back', handleTVBack);
+        return () => window.removeEventListener('tv-back', handleTVBack);
+    }, [
+        isPlayerOpen, isDetailOpen, categoryModal.isOpen, 
+        searchModalOpen, infoModalOpen, currentView,
+        setIsPlayerOpen, closeDetail, setCategoryModal, 
+        setSearchModalOpen, setInfoModalOpen, switchView,
+        exitImmersiveMode, goBack, focusSelf, setFocus
+    ]);
+
+    // === MOBILE BACK BUTTON HANDLER ===
+    useEffect(() => {
+        const handleBackButton = async () => {
+            if (platform.isTV) return; 
+
+            if (document.fullscreenElement) {
+                await exitImmersiveMode();
+                return;
+            }
+
+            if (isPlayerOpen) {
+                setIsPlayerOpen(false);
                 await NavigationBar.show().catch(() => {});
                 await StatusBar.show().catch(() => {});
                 if (screen.orientation && screen.orientation.lock) {
@@ -176,25 +313,10 @@ const AppContent = () => {
                 return;
             }
 
-            if (isDetailOpen) {
-                closeDetail();
-                return;
-            }
-
-            if (categoryModal.isOpen) {
-                setCategoryModal(prev => ({ ...prev, isOpen: false }));
-                return;
-            }
-
-            if (searchModalOpen) {
-                setSearchModalOpen(false);
-                return;
-            }
-
-            if (infoModalOpen) {
-                setInfoModalOpen(false);
-                return;
-            }
+            if (isDetailOpen) { closeDetail(); return; }
+            if (categoryModal.isOpen) { setCategoryModal(prev => ({ ...prev, isOpen: false })); return; }
+            if (searchModalOpen) { setSearchModalOpen(false); return; }
+            if (infoModalOpen) { setInfoModalOpen(false); return; }
 
             if (currentView !== 'home') {
                 switchView('home');
@@ -205,72 +327,79 @@ const AppContent = () => {
         };
 
         const backButtonListener = CapacitorApp.addListener('backButton', handleBackButton);
-
         return () => {
             backButtonListener.then(f => f.remove());
         };
     }, [
         isPlayerOpen, isDetailOpen, categoryModal.isOpen, 
-        searchModalOpen, infoModalOpen, currentView,
+        searchModalOpen, infoModalOpen, currentView, platform.isTV,
         setIsPlayerOpen, closeDetail, setCategoryModal, 
         setSearchModalOpen, setInfoModalOpen, switchView,
         exitImmersiveMode
     ]);
 
     // === NAVIGATION CLICK HANDLER ===
-    const handleNavClick = async (view) => {
+    const handleNavClick = useCallback(async (item) => {
+        if (item.action === 'menu') {
+            toggleSidebar();
+            return;
+        }
+
+        const view = item.view;
+
         if (document.fullscreenElement) {
             await exitImmersiveMode();
         }
         
-        // Update ref before switch
         lastViewRef.current = view;
-        
         document.documentElement.style.scrollBehavior = 'auto';
         window.scrollTo(0, 0);
         switchView(view); 
         setTimeout(() => document.documentElement.style.scrollBehavior = '', 50);
-    };
+    }, [exitImmersiveMode, switchView, toggleSidebar]);
 
+    // === INITIAL SETUP & FOCUS ===
     useLayoutEffect(() => {
         if ('scrollRestoration' in window.history) {
             window.history.scrollRestoration = 'manual';
         }
-        // Only scroll to top on initial mount or actual view change
         if (!isInitializedRef.current) {
             window.scrollTo(0, 0);
             isInitializedRef.current = true;
         }
     }, []);
 
-    // Only run this on actual view changes, not on every render
+    useEffect(() => {
+        if (platform.isTV || platform.isDesktop) {
+            focusSelf();
+            setTimeout(() => setFocus(`nav-${currentView}`), 500);
+        }
+    }, [platform.isTV, platform.isDesktop, focusSelf, setFocus, currentView]);
+
     useEffect(() => {
         if (!document.fullscreenElement && isInitializedRef.current) {
             forcePortraitAndRefresh(false);
         }
     }, [currentView, forcePortraitAndRefresh]);
 
-    // === EXPOSE FULLSCREEN FUNCTIONS TO WINDOW ===
     useEffect(() => {
         window.enterAppFullscreen = enterImmersiveMode;
         window.exitAppFullscreen = exitImmersiveMode;
     }, [enterImmersiveMode, exitImmersiveMode]);
 
-    // === INITIAL SETUP ===
     useEffect(() => {
         NavigationBar.show().catch(() => {});
         StatusBar.show().catch(() => {});
         isInitializedRef.current = true;
     }, []);
 
-    const isHomeActive = currentView === 'home';
-    const isExploreActive = currentView === 'explore';
-    const isLiveActive = currentView === 'live';
-
     return (
-        <>
-            <Loader />
-            <Sidebar />
+        <div 
+            ref={containerRef}
+            className={`app-container ${platform.isTV ? 'tv-mode' : ''} ${platform.isDesktop ? 'desktop-mode' : ''}`}
+            style={{ width: '100%', height: '100%', outline: 'none' }}
+            tabIndex="-1"
+        >
             <Navbar />
 
             {isOffline ? (
@@ -288,9 +417,15 @@ const AppContent = () => {
                 </div>
             ) : (
                 <>
-                    <div style={{ display: currentView === 'home' ? 'block' : 'none' }}><Home /></div>
-                    <div style={{ display: currentView === 'explore' ? 'block' : 'none' }}><Explore /></div>
-                    <div style={{ display: currentView === 'live' ? 'block' : 'none' }}><Live /></div>
+                    <main className="main-content" style={{ display: currentView === 'home' ? 'block' : 'none' }}>
+                        <Home />
+                    </main>
+                    <main className="main-content" style={{ display: currentView === 'explore' ? 'block' : 'none' }}>
+                        <Explore />
+                    </main>
+                    <main className="main-content" style={{ display: currentView === 'live' ? 'block' : 'none' }}>
+                        <Live />
+                    </main>
                     
                     <DetailView />
                     <PlayerOverlay />
@@ -302,21 +437,27 @@ const AppContent = () => {
             <InfoModal />
             <UpdateDialog />
             
-            <div className="bottom-nav">
-                <div className={`nav-item ${isHomeActive ? 'active' : ''}`} onClick={() => handleNavClick('home')}>
-                    <i className="fa-solid fa-house"></i><span>Home</span>
-                </div>
-                <div className={`nav-item ${isExploreActive ? 'active' : ''}`} onClick={() => handleNavClick('explore')}>
-                    <i className="fa-regular fa-compass"></i><span>Explore</span>
-                </div>
-                <div className={`nav-item ${isLiveActive ? 'active' : ''}`} onClick={() => handleNavClick('live')}>
-                    <i className="fa-solid fa-tv"></i><span>Live TV</span>
-                </div>
-            </div>
-        </>
+            <nav className="bottom-nav" role="tablist" aria-label="Main Navigation">
+                {navItems.map((item) => (
+                    <SmartNavItem 
+                        key={item.id}
+                        item={item} 
+                        isActive={item.view ? currentView === item.view : false} 
+                        onAction={handleNavClick}
+                        isTV={platform.isTV}
+                    />
+                ))}
+            </nav>
+        </div>
     );
 };
 
-const App = () => <GlobalProvider><AppContent /></GlobalProvider>;
+const App = () => (
+    <GlobalProvider>
+        <InputProvider>
+            <AppContent />
+        </InputProvider>
+    </GlobalProvider>
+);
 
 export default App;
