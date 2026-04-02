@@ -4129,6 +4129,76 @@ body:has(.search-modal-v2.active) {
   .card-poster {
     border-radius: 8px;
   }
+
+  .slide-content {
+        /* Strip away any desktop positioning */
+        position: absolute !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+        
+        /* Perfect centering layout */
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        
+        /* Bumper padding so it doesn't touch the arrows */
+        padding: 0 40px !important; 
+        box-sizing: border-box !important;
+    }
+
+    /* Force the badges to center */
+    .slide-badges {
+        justify-content: center !important;
+        width: 100% !important;
+    }
+
+    /* Force the meta info (Year • Rating) to center */
+    .slide-meta {
+        justify-content: center !important;
+        width: 100% !important;
+    }
+
+    /* Force the description text to center align */
+    .slide-desc {
+        text-align: center !important;
+        margin: 10px auto 15px auto !important;
+        max-width: 100% !important;
+    }
+
+    /* Force the buttons to group perfectly in the middle */
+    .slide-actions {
+        display: flex !important;
+        justify-content: center !important;
+        width: 100% !important;
+        gap: 15px !important;
+    }
+
+    .slide-title {
+        font-size: 1.8rem !important; 
+        line-height: 1.1 !important;
+        margin-bottom: 10px !important;
+        text-align: center !important;
+    }
+
+    /* Arrows pushed to the absolute edge */
+    .slider-arrow {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.8rem !important;
+        background: rgba(0, 0, 0, 0.4) !important; 
+    }
+
+    .prev-arrow { 
+        left: 5px !important; 
+    }
+    
+    .next-arrow { 
+        right: 5px !important; 
+    }
 }
 
 /* --- Tablet (768px-1023px): 5 columns --- */
@@ -5690,4 +5760,300 @@ body:has(.search-modal-v2.active) {
 /* Ensure focused elements are visible in scroll containers */
 .tv-focused {
   scroll-margin: 100px;
+}
+
+/* ==========================================================================
+   INFO VIEW & DONATE CARD LAYOUT FIX
+   ========================================================================== */
+
+/* 1. Fix the spacing between the cards and prevent bottom-nav overlap */
+.info-body > div {
+    /* This automatically adds perfect, even spacing between your InstaPay and Crypto cards */
+    display: flex;
+    flex-direction: column;
+    gap: 24px; 
+    
+    /* This forces the scrollable area to extend PAST the bottom nav, 
+       plus an extra 40px of breathing room so it looks clean */
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 40px) !important;
+}
+
+/* 2. Optional: If your cards are inside another wrapper, make sure they don't collapse */
+.info-body .donate-card,
+.info-body > div > div {
+    flex-shrink: 0;
+    width: 100%;
+}
+
+/* ==========================================================================
+   LIVE TV CHANNEL LIST NAV OVERLAP FIX
+   ========================================================================== */
+
+/* 1. Remove the bottom padding from the outer container so the scroll area goes all the way down */
+.channel-section {
+    padding-bottom: 0 !important;
+}
+
+/* 2. Apply the heavy bottom padding to the actual scrollable list */
+.channel-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px !important; /* Tweak this if you want more/less space between channel buttons */
+    
+    /* This adds the height of your nav + the phone's swipe bar + 60px of breathing room */
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 60px) !important;
+}
+
+/* =========================================
+   FORCE BADGE COLORS
+========================================= */
+.slide-badges .slide-badge.trending {
+    background: var(--accent-color, #a855f7) !important;
+    color: #fff !important;
+    border: 1px solid var(--accent-color, #a855f7) !important;
+}
+
+.slide-badges .slide-badge.coming-soon {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #ef4444 !important;
+    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+}
+
+.slide-badges .slide-badge.hd-badge {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #fff !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* ========================================================
+   26. PROFILE VIEW (TIKTOK STYLE)
+   ======================================================== */
+
+/* Hide Top Nav Sign In / Avatar on Mobile */
+@media (max-width: 1023px) {
+    .nav-right .login-btn,
+    .nav-right .nav-avatar {
+        display: none !important;
+    }
+}
+
+#profile-view {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 100vh;
+    background: var(--bg-color);
+    padding-top: var(--navbar-offset);
+    padding-bottom: calc(var(--bottom-nav-height) + 20px);
+    overflow-y: auto;
+    animation: fadeIn 0.3s ease;
+}
+
+/* Centered Header Section */
+.profile-header-centered {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.avatar-edit-wrapper {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    margin-bottom: 15px;
+}
+
+.profile-avatar-large {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--accent-color);
+    background: #1a1a1a;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.avatar-edit-btn {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 34px;
+    height: 34px;
+    background: var(--accent-color);
+    border: 3px solid var(--bg-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: transform 0.2s;
+}
+
+.avatar-edit-btn:active { transform: scale(0.9); }
+
+.profile-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+.profile-email {
+    font-size: 0.9rem;
+    color: #888;
+}
+
+/* Menu List Section */
+.profile-menu-list {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.profile-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: 1px solid transparent;
+}
+
+.profile-menu-item:active { 
+    background: rgba(255, 255, 255, 0.08); 
+    transform: scale(0.98);
+}
+
+.profile-menu-item-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: #eee;
+    font-size: 1.05rem;
+    font-weight: 500;
+}
+
+.profile-menu-item-left i {
+    color: var(--accent-color);
+    font-size: 1.2rem;
+    width: 24px;
+    text-align: center;
+}
+
+.profile-menu-item-right {
+    color: #555;
+    font-size: 1.2rem;
+}
+
+.profile-menu-item.logout {
+    margin-top: 20px;
+    background: rgba(239, 68, 68, 0.05);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.profile-menu-item.logout .profile-menu-item-left,
+.profile-menu-item.logout .profile-menu-item-left i {
+    color: #ef4444;
+}
+
+/* Guest State (Not Logged In) */
+.profile-guest-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.profile-guest-icon {
+    font-size: 4rem;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.profile-guest-title {
+    font-size: 1.5rem;
+    color: #fff;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.profile-guest-desc {
+    color: #888;
+    margin-bottom: 30px;
+    font-size: 0.95rem;
+    max-width: 300px;
+}
+
+.top-10-card {
+  position: relative;
+  display: flex;
+  align-items: flex-end; /* Keeps everything anchored to the bottom */
+  flex: 0 0 auto;
+  width: 180px; /* Tighter total width to bring cards closer together */
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  padding-bottom: 15px; /* Gives room for the hover jump */
+}
+
+.top-10-number {
+  /* THE NETFLIX SECRET: Ultra-thick fallback fonts */
+  font-family: 'Arial Black', Impact, system-ui, sans-serif; 
+  font-size: 13rem; /* Massive size */
+  font-weight: 900;
+  line-height: 0.75; /* Pulls the visual bottom of the text flush with the poster */
+  
+  color: var(--bg-color); 
+  -webkit-text-stroke: 3px var(--accent-color); 
+  text-shadow: 0 0 15px rgba(168, 85, 247, 0.4); 
+  
+  position: absolute;
+  left: -5px; /* Anchors it to the left edge */
+  bottom: 15px; /* Matches the padding-bottom of the card */
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: -8px; /* Keeps "10" tightly packed together */
+}
+
+.top-10-card .card-poster {
+  position: relative;
+  z-index: 2; 
+  width: 130px; 
+  aspect-ratio: 2/3;
+  border-radius: var(--border-radius);
+  margin-left: 50px; /* TIGHTER OVERLAP: Slides the poster deeper over the number */
+  box-shadow: -10px 0 20px rgba(0, 0, 0, 0.8); /* Changed shadow to fall onto the number */
+  background: #222;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.top-10-list {
+  display: flex;
+  gap: 25px; /* Adjust this if the numbers feel too far apart */
+  
+  /* 🚀 THE FIX: Lock vertical scrolling, allow horizontal */
+  overflow-x: auto;
+  overflow-y: hidden; 
+  
+  /* Give enough padding so the hover effect doesn't get cut off */
+  padding-top: 20px; 
+  padding-bottom: 25px;
+  padding-right: 40px;
+  
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }

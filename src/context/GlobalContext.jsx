@@ -27,12 +27,18 @@ export const GlobalProvider = ({ children }) => {
     });
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
+    // 🚀 NEW: GLOBAL REFRESH TRIGGER
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const triggerGlobalRefresh = () => {
+        setRefreshTrigger(prev => prev + 1);
+    };
+
     // --- NETWORK OFFLINE DETECTOR ---
     useEffect(() => {
         const handleOnline = () => {
             setIsOffline(false);
             showToast("SYSTEM ONLINE: Connection Restored", "success");
-            // React handles the smooth remount now!
+            triggerGlobalRefresh(); // Auto-refresh data when internet comes back
         };
         
         const handleOffline = () => {
@@ -66,6 +72,9 @@ export const GlobalProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [history, setHistory] = useState([]);
     const [watchlist, setWatchlist] = useState([]);
+
+    // 🚀 NEW: TOP 10 DATA STATE
+    const [top10Movies, setTop10Movies] = useState([]);
 
     // --- 3. DETAIL & PLAYER STATE ---
     const [detailItem, setDetailItem] = useState(() => {
@@ -136,6 +145,30 @@ export const GlobalProvider = ({ children }) => {
         });
         return () => unsubscribe();
     }, []);
+
+    // --- GLOBAL DATA FETCHING (Linked to Pull-to-Refresh) ---
+    useEffect(() => {
+        const fetchTop10Data = async () => {
+            try {
+                // TODO: Replace this with your actual TMDB/API fetch logic
+                // const res = await fetch('YOUR_API_ENDPOINT_HERE');
+                // const data = await res.json();
+                // setTop10Movies(data.results.slice(0, 10));
+                
+                // Temporary dummy data so the UI renders while you hook up the API
+                setTop10Movies([
+                    { id: 1, title: "Solo Leveling", posterUrl: "https://image.tmdb.org/t/p/w500/geCRueVbWQRaQyXEJQ2Q3CEXKk3.jpg", isHD: true },
+                    { id: 2, title: "Jujutsu Kaisen", posterUrl: "https://image.tmdb.org/t/p/w500/hFWP5HkbVEe40hrptjvFcLb4Fkw.jpg", isNew: true },
+                    { id: 3, title: "One Piece", posterUrl: "https://image.tmdb.org/t/p/w500/cMD9Ypuv7iU21NImkM5rSuhV8j.jpg", isHD: true }
+                ]);
+            } catch (error) {
+                console.error("Failed to fetch Top 10 data:", error);
+            }
+        };
+
+        // Fire this whenever the app loads OR when the user pulls to refresh
+        fetchTop10Data();
+    }, [refreshTrigger]);
 
     // --- GOOGLE LOGIN ---
     const loginGoogle = async () => {
@@ -311,8 +344,10 @@ export const GlobalProvider = ({ children }) => {
         <GlobalContext.Provider value={{
             isOffline, currentView, isSidebarOpen, isLoading, loadingMessage,
             user, history, watchlist,
+            top10Movies, // 🚀 EXPORTING TOP 10 DATA
             detailItem, isDetailOpen, isPlayerOpen,
             infoModal, searchModal, categoryModal,
+            refreshTrigger, triggerGlobalRefresh, 
             db, switchView, toggleSidebar, showLoader, hideLoader,
             loginGoogle, loginGithub, doLogout,
             addToHistory, removeFromHistory, togglePin, toggleWatchlist,

@@ -1,9 +1,18 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useGlobal } from '../context/GlobalContext';
 import { fetchData, IMG_URL, POSTER_URL, PLACEHOLDER_IMG, getDisplayTitle } from '../api/tmdb';
-
-// 🚀 ADDED: Import Capacitor Browser for external links
+import Top10Philippines from '../components/Top10Philippines';
+// Capacitor Browser for external links
 import { Browser } from '@capacitor/browser';
+
+// --- HELPER TO CHECK IF ITEM IS IN THE FUTURE ---
+const isItemUpcoming = (item) => {
+    const releaseStr = item.release_date || item.first_air_date;
+    if (!releaseStr) return false;
+    const releaseDate = new Date(releaseStr);
+    const today = new Date();
+    return releaseDate > today;
+};
 
 const MovieList = React.memo(({ items, isUpcoming }) => {
     const { openDetail } = useGlobal();
@@ -45,29 +54,26 @@ const Home = () => {
         hideLoader, 
         history, 
         removeFromHistory, 
-        togglePin,           
+        togglePin,          
         setCategoryModal,
-        setInfoModal 
+        setInfoModal,
+        refreshTrigger 
     } = useGlobal();
 
     const [sliderItems, setSliderItems] = useState([]);
     const [lists, setLists] = useState({
-        trending: [], kdrama: [], cdrama: [], filipino: [], movies: [], tv: [], anime: [], upcoming: []
+        trending: [], kdrama: [], cdrama: [], filipino: [], top_ph: [], movies: [], tv: [], anime: [], upcoming: []
     });
     const [slideIndex, setSlideIndex] = useState(0);
     const [activeMenuId, setActiveMenuId] = useState(null);
     const sliderInterval = useRef(null);
-    
-    // YOUTUBE STYLE STATE
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const [pullDistance, setPullDistance] = useState(0);
-    const touchStartY = useRef(0);
 
     const CATEGORY_ENDPOINTS = {
         'trending': '/trending/all/week',
         'kdrama': '/discover/tv?with_original_language=ko&with_origin_country=KR&sort_by=popularity.desc',
         'cdrama': '/discover/tv?with_original_language=zh&with_origin_country=CN&sort_by=popularity.desc',
         'filipino': '/discover/tv?with_original_language=tl&with_origin_country=PH&sort_by=popularity.desc',
+        'top_ph': '/discover/movie?region=PH&sort_by=popularity.desc',
         'anime': '/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc',
         'movies': '/movie/popular',
         'tv': '/tv/popular',
@@ -76,12 +82,13 @@ const Home = () => {
 
     const fetchAllData = async () => {
         try {
-            const [day, week, kr, cn, ph, anime, mov, tv, up] = await Promise.all([
+            const [day, week, kr, cn, ph, topPh, anime, mov, tv, up] = await Promise.all([
                 fetchData('/trending/all/day'),
                 fetchData('/trending/all/week'),
                 fetchData('/discover/tv?with_original_language=ko&with_origin_country=KR&sort_by=popularity.desc'),
                 fetchData('/discover/tv?with_original_language=zh&with_origin_country=CN&sort_by=popularity.desc'),
                 fetchData('/discover/tv?with_original_language=tl&with_origin_country=PH&sort_by=popularity.desc'),
+                fetchData('/discover/movie?region=PH&sort_by=popularity.desc'),
                 fetchData('/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc'),
                 fetchData('/movie/popular'),
                 fetchData('/tv/popular'),
@@ -97,6 +104,7 @@ const Home = () => {
                 kdrama: kr.results || [],
                 cdrama: cn.results || [],
                 filipino: ph.results || [],
+                top_ph: topPh.results || [],
                 anime: anime.results || [],
                 movies: mov.results || [],
                 tv: tv.results || [],
@@ -104,6 +112,12 @@ const Home = () => {
             });
         } catch (e) { console.error("Error fetching data:", e); }
     };
+
+    useEffect(() => {
+        if (refreshTrigger > 0) {
+            fetchAllData();
+        }
+    }, [refreshTrigger]);
 
     useEffect(() => {
         const init = async () => {
@@ -121,41 +135,6 @@ const Home = () => {
         window.addEventListener('click', closeMenu);
         return () => window.removeEventListener('click', closeMenu);
     }, []);
-
-    // --- EXACT YOUTUBE PHYSICS ---
-    const handleTouchStart = (e) => {
-        const scrollTop = window.scrollY || document.documentElement.scrollTop;
-        if (scrollTop <= 5) {
-            touchStartY.current = e.touches[0].clientY;
-        }
-    };
-
-    const handleTouchMove = (e) => {
-        if (touchStartY.current > 0) {
-            const currentY = e.touches[0].clientY;
-            const distance = currentY - touchStartY.current;
-            
-            if (distance > 0) {
-                // Slower drag resistance, max drop is 130px
-                setPullDistance(Math.min(distance * 0.5, 130)); 
-            }
-        }
-    };
-
-    const handleTouchEnd = async () => {
-        if (pullDistance > 80) { // Require a solid pull down
-            setIsRefreshing(true);
-            setPullDistance(100); // Lock it below the navbar while loading
-            
-            await fetchAllData();
-            
-            setIsRefreshing(false);
-            setPullDistance(0); // Shoot back up into hiding
-        } else {
-            setPullDistance(0); // Didn't pull far enough, hide it
-        }
-        touchStartY.current = 0;
-    };
 
     const startSlider = useCallback(() => {
         clearInterval(sliderInterval.current);
@@ -208,56 +187,34 @@ const Home = () => {
         setActiveMenuId(null);
     };
 
-    // 🚀 NEW: Helper function to open links externally
     const openExternalLink = async (e, url) => {
         e.preventDefault();
         try {
             await Browser.open({ url: url });
         } catch (error) {
-            // Fallback for desktop browsers testing
             window.open(url, '_blank');
         }
     };
 
     return (
-        <div 
-            id="home-view" 
-            onTouchStart={handleTouchStart} 
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-        >
-            {/* 🔄 THE YOUTUBE BUBBLE (Moves independent of the content) */}
-            <div style={{
-                position: 'fixed',
-                top: -50, // Hides 50px above the screen
-                left: '50%',
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                backgroundColor: '#fff',
-                boxShadow: '0 3px 12px rgba(0,0,0,0.4)',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                zIndex: 99999, // Extremely high z-index
-                // Here is the magic: Translate X centers it, Translate Y pulls it down, Rotate spins it based on finger drag
-                transform: `translate(-50%, ${isRefreshing ? 120 : pullDistance}px) rotate(${pullDistance * 3}deg)`,
-                transition: isRefreshing || pullDistance === 0 ? 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)' : 'none',
-                opacity: pullDistance > 10 || isRefreshing ? 1 : 0
-            }}>
-                <i 
-                    className={`fa-solid ${isRefreshing ? 'fa-spinner fa-spin' : 'fa-arrow-down'}`} 
-                    style={{ fontSize: '1.2rem', color: isRefreshing ? 'var(--accent-color)' : '#333' }}
-                ></i>
-            </div>
-
+        <div id="home-view">
             {/* SLIDER SECTION */}
             <div className="slider-viewport">
                 <div className="slider-track" style={{ transform: `translateX(-${slideIndex * 100}%)` }}>
                     {sliderItems.map((item, idx) => (
                         <div key={`${item.id}-${idx}`} className="slide" style={{ backgroundImage: `url(${IMG_URL + item.backdrop_path})` }}>
                             <div className="slide-content">
-                                <span className="slide-badge">Trending Now</span>
+                                
+                                {/* 🚀 NEW DYNAMIC BADGES */}
+                                <div className="slide-badges">
+                                    <span className="slide-badge trending">Trending Now</span>
+                                    {isItemUpcoming(item) ? (
+                                        <span className="slide-badge coming-soon">Coming Soon</span>
+                                    ) : (
+                                        <span className="slide-badge hd-badge">HD</span>
+                                    )}
+                                </div>
+
                                 <h1 className="slide-title">{getDisplayTitle(item)}</h1>
                                 <div className="slide-meta">
                                     <span>{(item.release_date || item.first_air_date || '').split('-')[0]}</span>
@@ -328,8 +285,12 @@ const Home = () => {
                 </div>
             )}
 
-            {/* CATEGORIES */}
+
+            {/* 🚀 THE NEW GIANT TOP 10 ROW */}
+            <Top10Philippines trendingMovies={lists.top_ph} />
+                        {/* CATEGORIES */}
             <div className="row"><h2 onClick={() => openCat('trending', 'Latest Updates')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Latest Updates <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.trending} /></div>
+            <div className="row"><h2 onClick={() => openCat('top_ph', 'Top in the Philippines')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Top in the Philippines <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.top_ph} /></div>
             <div className="row"><h2 onClick={() => openCat('kdrama', 'Top K-Drama')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Top K-Drama <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.kdrama} /></div>
             <div className="row"><h2 onClick={() => openCat('cdrama', 'Top C-Drama')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Top C-Drama <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.cdrama} /></div>
             <div className="row"><h2 onClick={() => openCat('filipino', 'Top Filipino Drama')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Top Filipino Drama <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.filipino} /></div>
@@ -371,7 +332,6 @@ const Home = () => {
                             <div className="footer-col">
                                 <span className="col-title">FOLLOW US</span>
                                 <div className="social-row">
-                                    {/* 🚀 REFACTOR: Changed standard links to use openExternalLink */}
                                     <a href="#" onClick={(e) => openExternalLink(e, "https://www.facebook.com/share/1BzwhDsGmT/")}>
                                         <i className="fa-brands fa-facebook-f"></i>
                                     </a>

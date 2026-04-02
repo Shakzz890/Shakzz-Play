@@ -6,11 +6,8 @@ import { PLACEHOLDER_IMG } from '../api/tmdb';
 import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { StatusBar } from '@capacitor/status-bar';
 import { NavigationBar } from '@capgo/capacitor-navigation-bar';
-
-// 🚀 ADDED: Import the Background Mode Plugin
 import { BackgroundMode } from '@anuradev/capacitor-background-mode';
 
-// 🛡️ ENVIRONMENT VARIABLES
 const WORKER_SERVERS = [
     import.meta.env.VITE_PROXY_BASE_URL,
     import.meta.env.VITE_PROXY_BACKUP_URL
@@ -22,10 +19,9 @@ const TABS = [
     "cartoons & animations", "anime tagalog dubbed"
 ];
 
-// 🔐 10-MINUTE EXPIRING TOKEN GENERATOR
 const generateSecureToken = async () => {
     const secret = import.meta.env.VITE_PROXY_SECRET_KEY || "shakzz_secure_core_2026_xyz";
-    const timeWindow = Math.floor(Date.now() / 600000); // 600,000 ms = 10 mins
+    const timeWindow = Math.floor(Date.now() / 600000); 
     const rawString = `${secret}-${timeWindow}`;
 
     const encoder = new TextEncoder();
@@ -35,25 +31,19 @@ const generateSecureToken = async () => {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-// 🚀 AUTO-FAILOVER ENGINE
 const fetchWithFailover = async (endpoint) => {
     let lastError;
-    
     const currentToken = await generateSecureToken();
-    const headers = {
-        "X-Shakzz-Access-Token": currentToken
-    };
+    const headers = { "X-Shakzz-Access-Token": currentToken };
 
     for (let i = 0; i < WORKER_SERVERS.length; i++) {
         const serverUrl = WORKER_SERVERS[i];
         try {
             const response = await fetch(`${serverUrl}${endpoint}`, { headers });
-
             if (response.status === 429 || response.status >= 500) {
                 console.warn(`[FAILOVER] Server ${i + 1} is unreachable. Switching to backup...`);
                 continue; 
             }
-
             return response; 
         } catch (error) {
             console.warn(`[FAILOVER] Network error on Server ${i + 1}:`, error);
@@ -64,21 +54,18 @@ const fetchWithFailover = async (endpoint) => {
 };
 
 const Live = () => {
-    const { currentView } = useGlobal();
+    const { currentView, refreshTrigger } = useGlobal(); // 🚀 GLOBAL TRIGGER
 
-    // --- CLOUDFLARE DYNAMIC DATA STATES ---
     const [channels, setChannels] = useState({});
     const [animeData, setAnimeData] = useState({});
     const [isDbLoading, setIsDbLoading] = useState(true);
 
-    // --- STATE ---
     const [activeChannelKey, setActiveChannelKey] = useState(null);
     const [activeTab, setActiveTab] = useState(0); 
     const [searchQuery, setSearchQuery] = useState("");
     const [favorites, setFavorites] = useState([]);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 1023);
     
-    // Data States
     const [onlineCount, setOnlineCount] = useState(null);
     const [currentTime, setCurrentTime] = useState(new Date()); 
     const [isAnimeLoading, setIsAnimeLoading] = useState(false); 
@@ -87,31 +74,64 @@ const Live = () => {
     const [animeEpisodes, setAnimeEpisodes] = useState([]);
     const [selectedAnimeTitle, setSelectedAnimeTitle] = useState("");
 
-    // 🚀 NEW: KEEP ALIVE LOGIC FOR LIVE TV
+    // 🚀 REFACTOR: Moved fetch out so we can call it on refresh
+    const initLiveTV = async (isManual = false) => {
+        if (!isManual) setIsDbLoading(true);
+        try {
+            const dbRes = await fetchWithFailover('');
+            if (!dbRes.ok) throw new Error("Failed to load Cloudflare DB");
+            
+            const dbData = await dbRes.json();
+            const remoteChannels = dbData.channels || {};
+            const remoteAnime = dbData.animeData || {};
+
+            setChannels(remoteChannels);
+            setAnimeData(remoteAnime);
+            setIsDbLoading(false);
+
+            const lastPlayed = localStorage.getItem("lastPlayedChannel");
+            let targetChannel = "";
+            if (lastPlayed && remoteChannels[lastPlayed]) {
+                targetChannel = lastPlayed;
+            } else {
+                targetChannel = remoteChannels['kapamilya'] ? 'kapamilya' : Object.keys(remoteChannels)[0];
+            }
+
+            if (!window.jwplayer) {
+                const script = document.createElement('script');
+                script.src = "https://ssl.p.jwpcdn.com/player/v/8.38.10/jwplayer.js";
+                script.onload = () => {
+                    window.jwplayer.key = "ITWMv7t88JGzI0xPwW8I0+LveiXX9SWbfdmt0ArUSyc=";
+                    if(targetChannel) loadChannel(targetChannel, null, remoteChannels);
+                };
+                document.head.appendChild(script);
+            } else {
+                if(targetChannel) loadChannel(targetChannel, null, remoteChannels);
+            }
+        } catch (err) {
+            console.error("DB Sync Error:", err);
+            setIsDbLoading(false);
+        }
+    };
+
+    // 🚀 LISTEN FOR GLOBAL REFRESH
+    useEffect(() => {
+        if (refreshTrigger > 0) {
+            initLiveTV(true);
+        }
+    }, [refreshTrigger]);
+
     useEffect(() => {
         const handleBackgroundMode = async () => {
             try {
-                if (currentView === 'live') {
-                    // Turn on keep-alive if the user is on the Live tab
-                    await BackgroundMode.enable();
-                } else {
-                    // Turn it off if they switch to Home or Explore
-                    await BackgroundMode.disable();
-                }
-            } catch (err) {
-                console.log("Background mode error:", err);
-            }
+                if (currentView === 'live') { await BackgroundMode.enable(); } 
+                else { await BackgroundMode.disable(); }
+            } catch (err) {}
         };
-
         handleBackgroundMode();
-
-        // Cleanup: Turn it off if the component is somehow destroyed
-        return () => {
-            BackgroundMode.disable().catch(() => {});
-        };
+        return () => { BackgroundMode.disable().catch(() => {}); };
     }, [currentView]);
 
-    // --- INITIAL SETUP & CLOUDFLARE FETCH ---
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 1023);
         window.addEventListener('resize', handleResize);
@@ -135,45 +155,7 @@ const Live = () => {
         const countInterval = setInterval(updateCount, 5000);
         updateCount();
 
-        const initLiveTV = async () => {
-            try {
-                const dbRes = await fetchWithFailover('');
-                if (!dbRes.ok) throw new Error("Failed to load Cloudflare DB");
-                
-                const dbData = await dbRes.json();
-                const remoteChannels = dbData.channels || {};
-                const remoteAnime = dbData.animeData || {};
-
-                setChannels(remoteChannels);
-                setAnimeData(remoteAnime);
-                setIsDbLoading(false);
-
-                const lastPlayed = localStorage.getItem("lastPlayedChannel");
-                let targetChannel = "";
-                if (lastPlayed && remoteChannels[lastPlayed]) {
-                    targetChannel = lastPlayed;
-                } else {
-                    targetChannel = remoteChannels['kapamilya'] ? 'kapamilya' : Object.keys(remoteChannels)[0];
-                }
-
-                if (!window.jwplayer) {
-                    const script = document.createElement('script');
-                    script.src = "https://ssl.p.jwpcdn.com/player/v/8.38.10/jwplayer.js";
-                    script.onload = () => {
-                        window.jwplayer.key = "ITWMv7t88JGzI0xPwW8I0+LveiXX9SWbfdmt0ArUSyc=";
-                        if(targetChannel) loadChannel(targetChannel, null, remoteChannels);
-                    };
-                    document.head.appendChild(script);
-                } else {
-                    if(targetChannel) loadChannel(targetChannel, null, remoteChannels);
-                }
-
-            } catch (err) {
-                console.error("DB Sync Error:", err);
-                setIsDbLoading(false);
-            }
-        };
-
+        // Initial Load
         initLiveTV();
 
         return () => {
@@ -183,7 +165,6 @@ const Live = () => {
         };
     }, []);
 
-    // --- VIEW SWITCHING LOGIC ---
     useEffect(() => {
         if (!window.jwplayer || !activeChannelKey) return;
         try {
@@ -199,7 +180,6 @@ const Live = () => {
         } catch(e) {}
     }, [currentView, activeChannelKey]);
 
-    // --- PLAYER LOGIC ---
     const loadChannel = async (key, customData = null, dbRef = channels) => {
         const channelMeta = customData || dbRef[key];
         if (!channelMeta) return;
@@ -302,17 +282,13 @@ const Live = () => {
         }
     };
 
-    // --- ANIME EPISODE LOADER (FIXED) ---
     const loadAnimeEpisode = async (episode) => {
         if (!episode) return;
         
         const epName = episode.name || "Episode";
-        
-        // 1. Set active key IMMEDIATELY so the UI highlights the button even if it fails later
         setActiveChannelKey(epName);
         localStorage.setItem("lastPlayedChannel", epName);
 
-        // 2. Show loading banner immediately
         const loadingBanner = document.getElementById('stream-loading-banner');
         if (loadingBanner) {
             loadingBanner.style.opacity = '1';
@@ -323,10 +299,8 @@ const Live = () => {
             `;
         }
 
-        // Search for a stream URL across common keys just in case
         let finalManifest = episode.manifestUri || episode.url || episode.file;
 
-        // 3. Graceful Error Handling: Notify the user instead of a silent console error
         if (!finalManifest) {
             console.error("Episode has no manifestUri:", episode);
             if (loadingBanner) {
@@ -340,13 +314,11 @@ const Live = () => {
 
         const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJTaGFrenoiLCJleHAiOjE3NjY5NTgzNTN9.RSc_LQ11txXXI0d7gZ8GvMOAwoHrWzUUr3CCQCM0Hco";
         
-        // Add auth token if needed
         if (finalManifest.includes("converse.nathcreqtives.com")) {
             const separator = finalManifest.includes('?') ? '&' : '?';
             finalManifest = `${finalManifest}${separator}token=${AUTH_TOKEN}`;
         }
 
-        // Setup DRM if needed
         let drmConfig = undefined;
         if (episode.type === "clearkey" && episode.keyId && episode.key) {
             drmConfig = { clearkey: { keyId: episode.keyId, key: episode.key } };
@@ -425,10 +397,8 @@ const Live = () => {
                     const secureEpisodes = await response.json();
                     const localEpisodes = animeData[title];
                     
-                    // FIXED: Safer merging logic so undefined server values don't break valid local values
                     const mergedList = localEpisodes.map((localEp, index) => {
                         const secureEp = secureEpisodes[index];
-                        
                         let streamUrl = localEp.manifestUri || localEp.file || localEp.url;
                         
                         if (typeof secureEp === 'string') {
@@ -446,11 +416,11 @@ const Live = () => {
 
                     setAnimeEpisodes(mergedList);
                 } else {
-                    setAnimeEpisodes(animeData[title]); // Fallback to raw local data if secure fetch fails
+                    setAnimeEpisodes(animeData[title]); 
                 }
             } catch (error) {
                 console.error("Anime Fetch Error:", error);
-                setAnimeEpisodes(animeData[title]); // Fallback
+                setAnimeEpisodes(animeData[title]); 
             } finally {
                 setIsAnimeLoading(false);
             }
@@ -513,7 +483,6 @@ const Live = () => {
 
     return (
         <div id="live-view" style={{ display: 'flex', position: 'relative' }}>
-            {/* 1. PLAYER CONTAINER */}
             <div className="live-player-container">
                 <div id="playerWrapper">
                     <div id="video">
@@ -524,16 +493,15 @@ const Live = () => {
 
                     <div id="overlayContainer">
                         <div id="nowPlayingOverlay">
-    <span className="pulsing-dot"></span>
-    Now Playing: <span id="nowPlayingChannel">
-        {activeChannelKey ? (channels[activeChannelKey]?.name || activeChannelKey) : "Select Channel"}
-    </span>
-</div>
+                            <span className="pulsing-dot"></span>
+                            Now Playing: <span id="nowPlayingChannel">
+                                {activeChannelKey ? (channels[activeChannelKey]?.name || activeChannelKey) : "Select Channel"}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* 2. SIDEBAR CONTAINER */}
             <div className="channel-section">
                 <div className="search-container">
                     <i className="fas fa-search search-icon"></i>

@@ -3,7 +3,7 @@ import { useGlobal } from '../../context/GlobalContext';
 import FocusWrapper from '../FocusWrapper'; 
 
 const BottomNav = () => {
-    const { currentView, switchView, toggleSidebar } = useGlobal();
+    const { currentView, switchView } = useGlobal(); // removed toggleSidebar if you aren't using it here
 
     const handleNavClick = (view) => {
         document.documentElement.style.scrollBehavior = 'auto';
@@ -15,6 +15,7 @@ const BottomNav = () => {
     const isHomeActive = currentView === 'home';
     const isExploreActive = currentView === 'explore';
     const isLiveActive = currentView === 'live';
+    const isProfileActive = currentView === 'profile'; // Add this
 
     return (
         <div className="bottom-nav-telegram">
@@ -48,14 +49,15 @@ const BottomNav = () => {
                 <span>Live TV</span>
             </FocusWrapper>
 
+            {/* Change Menu to Profile */}
             <FocusWrapper 
-                className="nav-item" 
-                onClick={toggleSidebar}
+                className={`nav-item ${isProfileActive ? 'active' : ''}`} 
+                onClick={() => handleNavClick('profile')}
             >
                 <div className="icon-container">
-                    <i className="fa-solid fa-bars"></i>
+                    <i className="fa-solid fa-user"></i>
                 </div>
-                <span>Menu</span>
+                <span>Profile</span>
             </FocusWrapper>
         </div>
     );

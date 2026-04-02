@@ -1,9 +1,9 @@
 // src/App.jsx
-import React, { useLayoutEffect, useEffect, useCallback, useRef } from 'react';
+import React, { useLayoutEffect, useEffect, useCallback, useRef, useState } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { StatusBar } from '@capacitor/status-bar';
 import { NavigationBar } from '@capgo/capacitor-navigation-bar';
-import { SplashScreen } from '@capacitor/splash-screen'; // 🚀 ADDED SPLASH SCREEN
+import { SplashScreen } from '@capacitor/splash-screen'; 
 import { GlobalProvider, useGlobal } from './context/GlobalContext';
 
 // --- NEW: IMPORT NORIGIN SPATIAL NAVIGATION ---
@@ -20,6 +20,10 @@ import InfoModal from './components/Layout/InfoView';
 import Home from './pages/Home';
 import Live from './pages/Live';
 import Explore from './pages/Explore';
+import Profile from './pages/Profile';
+import History from './pages/History'; 
+import Favorites from './pages/Favorites';
+import Settings from './pages/Settings';
 
 // Components & Overlays
 import DetailView from './components/Detail/DetailView';
@@ -38,7 +42,7 @@ init({
 });
 
 // ==========================================================================
-// 🚀 SMART NAV ITEM COMPONENT (UPDATED FOR HYBRID CLICKS)
+// 🚀 SMART NAV ITEM COMPONENT
 // ==========================================================================
 const SmartNavItem = ({ item, isActive, onAction, isTV }) => {
     const { ref, focused, setFocus } = useFocusable({
@@ -50,19 +54,12 @@ const SmartNavItem = ({ item, isActive, onAction, isTV }) => {
         <div
             ref={ref}
             className={`nav-item ${isActive ? 'active' : ''} ${focused ? 'tv-focused' : ''}`}
-            // 🚀 USE onPointerDown INSTEAD OF onClick TO BYPASS TV ENGINE
             onPointerDown={(e) => {
                 e.preventDefault(); 
                 e.stopPropagation();
-                
-                // Only hijack focus if we are actually on a TV
-                if (isTV) {
-                    setFocus();
-                }
-                
+                if (isTV) { setFocus(); }
                 onAction(item); 
             }}
-            // Keep onClick as a fallback but stop it from bubbling up
             onClick={(e) => e.stopPropagation()}
             role="tab"
             aria-selected={isActive}
@@ -90,12 +87,12 @@ const AppContent = () => {
         isDetailOpen, closeDetail,
         categoryModal, setCategoryModal,
         searchModalOpen, setSearchModalOpen,
-        infoModalOpen, setInfoModalOpen
+        infoModalOpen, setInfoModalOpen,
+        triggerGlobalRefresh // 🚀 PULLING GLOBAL TRIGGER
     } = useGlobal();
 
     const { platform, goBack, containerRef } = useInput();
 
-    // Focus engine control
     const { focusKey, focusSelf, setFocus } = useFocusable({
         trackChildren: true,
         autoRestoreFocus: true,
@@ -105,41 +102,35 @@ const AppContent = () => {
     const isInitializedRef = useRef(false);
     const lastViewRef = useRef(currentView);
 
-    // === SYSTEM STARTUP AUDIO & SPLASH HIDE ===
-    useEffect(() => {
-        // 1. Hide the native splash screen ONLY after React is completely ready and dark theme is drawn
-        SplashScreen.hide().catch(() => {});
+    // 🚀 GLOBAL REFRESH PHYSICS STATE
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [pullDistance, setPullDistance] = useState(0);
+    const touchStartY = useRef(0);
 
-        // 2. Startup Audio Logic
+    // === STARTUP ===
+    useEffect(() => {
+        SplashScreen.hide().catch(() => {});
         const startupAudio = new Audio('/assets/sounds/system_open.mp3');
         startupAudio.volume = 0.5;
 
-        // Try playing immediately
         startupAudio.play().catch((err) => {
-            console.log("Autoplay blocked by Android WebView. Waiting for first interaction...");
-            
-            // If blocked, wait for the user to tap the screen anywhere
             const playOnFirstTap = () => {
                 startupAudio.play().catch(() => {});
-                // Remove listeners instantly so it doesn't play twice
                 document.removeEventListener('touchstart', playOnFirstTap);
                 document.removeEventListener('mousedown', playOnFirstTap);
             };
-            
             document.addEventListener('touchstart', playOnFirstTap, { once: true });
             document.addEventListener('mousedown', playOnFirstTap, { once: true });
         });
 
-        return () => {
-            startupAudio.pause();
-        };
+        return () => startupAudio.pause();
     }, []);
     
-    // Nav Items (Menu removed to allow equal stretching)
     const navItems = [
         { id: 'home', label: 'Home', icon: 'fa-house', view: 'home' },
         { id: 'explore', label: 'Explore', icon: 'fa-compass', view: 'explore' },
         { id: 'live', label: 'Live TV', icon: 'fa-tv', view: 'live' },
+        { id: 'profile', label: 'Profile', icon: 'fa-user', view: 'profile' },
     ];
 
     // === IMMERSIVE FULLSCREEN MODE ===
@@ -147,69 +138,40 @@ const AppContent = () => {
         try {
             await NavigationBar.hide();
             await StatusBar.hide();
-            
             const docEl = document.documentElement;
-            if (docEl.requestFullscreen) {
-                await docEl.requestFullscreen();
-            } else if (docEl.webkitRequestFullscreen) {
-                await docEl.webkitRequestFullscreen();
-            }
-
-            if (screen.orientation && screen.orientation.lock) {
-                await screen.orientation.lock('landscape');
-            }
-        } catch (err) {
-            console.log('Enter immersive error:', err);
-        }
+            if (docEl.requestFullscreen) { await docEl.requestFullscreen(); } 
+            else if (docEl.webkitRequestFullscreen) { await docEl.webkitRequestFullscreen(); }
+            if (screen.orientation && screen.orientation.lock) { await screen.orientation.lock('landscape'); }
+        } catch (err) {}
     }, []);
 
     const exitImmersiveMode = useCallback(async () => {
         try {
             await NavigationBar.show();
             await StatusBar.show();
-            
-            if (document.exitFullscreen) {
-                await document.exitFullscreen();
-            } else if (document.webkitExitFullscreen) {
-                await document.webkitExitFullscreen();
-            }
-
-            if (screen.orientation && screen.orientation.unlock) {
-                screen.orientation.unlock();
-            }
-            
+            if (document.exitFullscreen) { await document.exitFullscreen(); } 
+            else if (document.webkitExitFullscreen) { await document.webkitExitFullscreen(); }
+            if (screen.orientation && screen.orientation.unlock) { screen.orientation.unlock(); }
             await screen.orientation.lock('portrait').catch(() => {});
-        } catch (err) {
-            console.log('Exit immersive error:', err);
-        }
+        } catch (err) {}
     }, []);
 
-    // === SAFE REFRESH ===
     const forcePortraitAndRefresh = useCallback(async (isFromVisibilityChange = false) => {
         if (isFromVisibilityChange) {
             await NavigationBar.show().catch(() => {});
             await StatusBar.show().catch(() => {});
             return;
         }
-
         await NavigationBar.show().catch(() => {});
         await StatusBar.show().catch(() => {});
-        
-        if (screen.orientation && screen.orientation.unlock) {
-            screen.orientation.unlock();
-        }
-        
-        try {
-            await screen.orientation.lock('portrait');
-        } catch (e) {}
-        
+        if (screen.orientation && screen.orientation.unlock) { screen.orientation.unlock(); }
+        try { await screen.orientation.lock('portrait'); } catch (e) {}
         if (lastViewRef.current !== currentView) {
             window.scrollTo(0, 0);
             lastViewRef.current = currentView;
         }
     }, [currentView]);
 
-    // === FULLSCREEN CHANGE HANDLER ===
     useEffect(() => {
         const handleFullscreenChange = async () => {
             const isFullscreen = !!document.fullscreenElement;
@@ -221,56 +183,39 @@ const AppContent = () => {
                 await StatusBar.hide().catch(() => {});
             }
         };
-
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-        
         return () => {
             document.removeEventListener('fullscreenchange', handleFullscreenChange);
             document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
         };
     }, []);
 
-    // === VISIBILITY CHANGE HANDLER ===
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
                 NavigationBar.show().catch(() => {});
                 StatusBar.show().catch(() => {});
-                
-                if (!document.fullscreenElement) {
-                    if (screen.orientation && screen.orientation.lock) {
-                        screen.orientation.lock('portrait').catch(() => {});
-                    }
+                if (!document.fullscreenElement && screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('portrait').catch(() => {});
                 }
             }
         };
-
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
-    // === TV BACK BUTTON HANDLER ===
     useEffect(() => {
         const handleTVBack = async (e) => {
-            if (document.fullscreenElement) {
-                await exitImmersiveMode();
-                return;
-            }
-
+            if (document.fullscreenElement) { await exitImmersiveMode(); return; }
             if (isPlayerOpen) {
                 setIsPlayerOpen(false);
                 await NavigationBar.show().catch(() => {});
                 await StatusBar.show().catch(() => {});
-                if (screen.orientation && screen.orientation.lock) {
-                    await screen.orientation.lock('portrait').catch(() => {});
-                }
+                if (screen.orientation && screen.orientation.lock) { await screen.orientation.lock('portrait').catch(() => {}); }
                 focusSelf();
                 return;
             }
-
             if (isDetailOpen) { closeDetail(); focusSelf(); return; }
             if (categoryModal.isOpen) { setCategoryModal(prev => ({ ...prev, isOpen: false })); focusSelf(); return; }
             if (searchModalOpen) { setSearchModalOpen(false); focusSelf(); return; }
@@ -282,87 +227,44 @@ const AppContent = () => {
                 setFocus('nav-home'); 
             }
         };
-
         window.addEventListener('tv-back', handleTVBack);
         return () => window.removeEventListener('tv-back', handleTVBack);
-    }, [
-        isPlayerOpen, isDetailOpen, categoryModal.isOpen, 
-        searchModalOpen, infoModalOpen, currentView,
-        setIsPlayerOpen, closeDetail, setCategoryModal, 
-        setSearchModalOpen, setInfoModalOpen, switchView,
-        exitImmersiveMode, goBack, focusSelf, setFocus
-    ]);
+    }, [isPlayerOpen, isDetailOpen, categoryModal.isOpen, searchModalOpen, infoModalOpen, currentView, setIsPlayerOpen, closeDetail, setCategoryModal, setSearchModalOpen, setInfoModalOpen, switchView, exitImmersiveMode, goBack, focusSelf, setFocus]);
 
-    // === MOBILE BACK BUTTON HANDLER ===
     useEffect(() => {
         const handleBackButton = async () => {
             if (platform.isTV) return; 
-
-            if (document.fullscreenElement) {
-                await exitImmersiveMode();
-                return;
-            }
-
+            if (document.fullscreenElement) { await exitImmersiveMode(); return; }
             if (isPlayerOpen) {
                 setIsPlayerOpen(false);
                 await NavigationBar.show().catch(() => {});
                 await StatusBar.show().catch(() => {});
-                if (screen.orientation && screen.orientation.lock) {
-                    await screen.orientation.lock('portrait').catch(() => {});
-                }
+                if (screen.orientation && screen.orientation.lock) { await screen.orientation.lock('portrait').catch(() => {}); }
                 return;
             }
-
             if (isDetailOpen) { closeDetail(); return; }
             if (categoryModal.isOpen) { setCategoryModal(prev => ({ ...prev, isOpen: false })); return; }
             if (searchModalOpen) { setSearchModalOpen(false); return; }
             if (infoModalOpen) { setInfoModalOpen(false); return; }
-
-            if (currentView !== 'home') {
-                switchView('home');
-                return;
-            }
-
+            if (currentView !== 'home') { switchView('home'); return; }
             CapacitorApp.exitApp();
         };
-
         const backButtonListener = CapacitorApp.addListener('backButton', handleBackButton);
-        return () => {
-            backButtonListener.then(f => f.remove());
-        };
-    }, [
-        isPlayerOpen, isDetailOpen, categoryModal.isOpen, 
-        searchModalOpen, infoModalOpen, currentView, platform.isTV,
-        setIsPlayerOpen, closeDetail, setCategoryModal, 
-        setSearchModalOpen, setInfoModalOpen, switchView,
-        exitImmersiveMode
-    ]);
+        return () => { backButtonListener.then(f => f.remove()); };
+    }, [isPlayerOpen, isDetailOpen, categoryModal.isOpen, searchModalOpen, infoModalOpen, currentView, platform.isTV, setIsPlayerOpen, closeDetail, setCategoryModal, setSearchModalOpen, setInfoModalOpen, switchView, exitImmersiveMode]);
 
-    // === NAVIGATION CLICK HANDLER ===
     const handleNavClick = useCallback(async (item) => {
-        if (item.action === 'menu') {
-            toggleSidebar();
-            return;
-        }
-
-        const view = item.view;
-
-        if (document.fullscreenElement) {
-            await exitImmersiveMode();
-        }
-        
-        lastViewRef.current = view;
+        if (item.action === 'menu') { toggleSidebar(); return; }
+        if (document.fullscreenElement) { await exitImmersiveMode(); }
+        lastViewRef.current = item.view;
         document.documentElement.style.scrollBehavior = 'auto';
         window.scrollTo(0, 0);
-        switchView(view); 
+        switchView(item.view); 
         setTimeout(() => document.documentElement.style.scrollBehavior = '', 50);
     }, [exitImmersiveMode, switchView, toggleSidebar]);
 
-    // === INITIAL SETUP & FOCUS ===
     useLayoutEffect(() => {
-        if ('scrollRestoration' in window.history) {
-            window.history.scrollRestoration = 'manual';
-        }
+        if ('scrollRestoration' in window.history) { window.history.scrollRestoration = 'manual'; }
         if (!isInitializedRef.current) {
             window.scrollTo(0, 0);
             isInitializedRef.current = true;
@@ -377,9 +279,7 @@ const AppContent = () => {
     }, [platform.isTV, platform.isDesktop, focusSelf, setFocus, currentView]);
 
     useEffect(() => {
-        if (!document.fullscreenElement && isInitializedRef.current) {
-            forcePortraitAndRefresh(false);
-        }
+        if (!document.fullscreenElement && isInitializedRef.current) { forcePortraitAndRefresh(false); }
     }, [currentView, forcePortraitAndRefresh]);
 
     useEffect(() => {
@@ -393,13 +293,77 @@ const AppContent = () => {
         isInitializedRef.current = true;
     }, []);
 
+    // ==========================================================================
+    // 🚀 GLOBAL PULL-TO-REFRESH PHYSICS
+    // ==========================================================================
+    const handleTouchStart = (e) => {
+        if (window.scrollY <= 5) {
+            touchStartY.current = e.touches[0].clientY;
+        }
+    };
+
+    const handleTouchMove = (e) => {
+        if (touchStartY.current > 0) {
+            const currentY = e.touches[0].clientY;
+            const distance = currentY - touchStartY.current;
+            if (distance > 0) {
+                setPullDistance(Math.min(distance * 0.45, 130)); 
+            }
+        }
+    };
+
+    const handleTouchEnd = async () => {
+        if (pullDistance > 80) { 
+            setIsRefreshing(true);
+            setPullDistance(100); 
+            
+            triggerGlobalRefresh(); // Tell active views to fetch data
+            
+            // Artificial delay to let the animation play out while fetching starts
+            await new Promise(res => setTimeout(res, 1200)); 
+            
+            setIsRefreshing(false);
+            setPullDistance(0); 
+        } else {
+            setPullDistance(0); 
+        }
+        touchStartY.current = 0;
+    };
+
     return (
         <div 
             ref={containerRef}
             className={`app-container ${platform.isTV ? 'tv-mode' : ''} ${platform.isDesktop ? 'desktop-mode' : ''}`}
             style={{ width: '100%', height: '100%', outline: 'none' }}
             tabIndex="-1"
+            onTouchStart={handleTouchStart} 
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
         >
+            {/* 🔄 THE GLOBAL YOUTUBE REFRESH BUBBLE */}
+            <div style={{
+                position: 'fixed',
+                top: -50,
+                left: '50%',
+                width: '44px',
+                height: '44px',
+                borderRadius: '50%',
+                backgroundColor: '#fff',
+                boxShadow: '0 3px 12px rgba(0,0,0,0.4)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 999999, // Ensure it's above everything
+                transform: `translate(-50%, ${isRefreshing ? 120 : pullDistance}px) rotate(${pullDistance * 3}deg)`,
+                transition: isRefreshing || pullDistance === 0 ? 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)' : 'none',
+                opacity: pullDistance > 10 || isRefreshing ? 1 : 0
+            }}>
+                <i 
+                    className={`fa-solid ${isRefreshing ? 'fa-spinner fa-spin' : 'fa-arrow-down'}`} 
+                    style={{ fontSize: '1.2rem', color: isRefreshing ? 'var(--accent-color)' : '#333' }}
+                ></i>
+            </div>
+
             <Navbar />
 
             {isOffline ? (
@@ -413,7 +377,20 @@ const AppContent = () => {
                         <div style={{ position: 'absolute', width: '120%', height: '6px', background: 'var(--bg-color, #0a0a0a)', borderTop: '2px solid #ef4444', top: '50%', left: '-10%', transform: 'rotate(-45deg)' }}></div>
                     </i>
                     <h2 style={{ color: '#fff', marginBottom: '10px', fontSize: '1.5rem', letterSpacing: '1px' }}>SYSTEM OFFLINE</h2>
-                    <p style={{ color: '#aaa', fontSize: '0.95rem', maxWidth: '300px' }}>Check your network connection to synchronize with the server.</p>
+                    <p style={{ color: '#aaa', fontSize: '0.95rem', maxWidth: '300px', marginBottom: '30px' }}>Check your network connection to synchronize with the server.</p>
+                    
+                    {/* 🚀 MANUAL RETRY BUTTON */}
+                    <button 
+                        onClick={() => {
+                            if (navigator.onLine) { triggerGlobalRefresh(); }
+                        }}
+                        style={{
+                            padding: '12px 24px', background: 'var(--accent-color)', color: '#fff', 
+                            border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer'
+                        }}
+                    >
+                        <i className="fa-solid fa-rotate-right" style={{marginRight: '8px'}}></i> Retry Connection
+                    </button>
                 </div>
             ) : (
                 <>
@@ -425,6 +402,18 @@ const AppContent = () => {
                     </main>
                     <main className="main-content" style={{ display: currentView === 'live' ? 'block' : 'none' }}>
                         <Live />
+                    </main>
+                    <main className="main-content" style={{ display: currentView === 'profile' ? 'block' : 'none' }}>
+                        <Profile />
+                    </main>
+                    <main className="main-content" style={{ display: currentView === 'history' ? 'block' : 'none' }}>
+                        <History />
+                    </main>
+                    <main className="main-content" style={{ display: currentView === 'favorites' ? 'block' : 'none' }}>
+                        <Favorites />
+                    </main>
+                    <main className="main-content" style={{ display: currentView === 'settings' ? 'block' : 'none' }}>
+                        <Settings />
                     </main>
                     
                     <DetailView />

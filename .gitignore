@@ -33,3 +33,4 @@ android/.gradle/
 
 *.jks
 *.keystore
+.fake
