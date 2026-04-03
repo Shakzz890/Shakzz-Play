@@ -1,6 +1,6 @@
 {
   "latestVersion": "1.2.0",
   "releaseNotes": "🔥 Huge Update Available!\n\n-- Added Netflix-style Top 10 row\n-- New Profile Hub & Avatar Cropper\n-- Full Android TV D-Pad support\n-- UI improvements and bug fixes",
-  "updateRequired": false,
+  "updateRequired": true,
   "downloadUrl": "https://www.facebook.com/share/p/1DdqoykmpX/"
 }
