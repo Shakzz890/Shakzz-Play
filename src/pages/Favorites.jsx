@@ -2,37 +2,44 @@ import React from 'react';
 import { useGlobal } from '../context/GlobalContext';
 
 const Favorites = () => {
-    const { watchlist, switchView } = useGlobal();
+    const { watchlist, switchView, openDetail } = useGlobal();
 
     return (
-        <div style={{ padding: '20px', color: 'white', paddingTop: '80px', minHeight: '100vh' }}>
-            <button 
-                onClick={() => switchView('profile')} 
-                style={{ marginBottom: '20px', background: 'transparent', color: '#a855f7', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
-            >
-                <i className="fa-solid fa-arrow-left"></i> Back to Profile
-            </button>
+        <div style={{ paddingTop: 'var(--navbar-offset)', paddingBottom: 'calc(var(--bottom-nav-height) + 20px)', minHeight: '100vh' }}>
             
-            <h2>My Favorites</h2>
-            
-            {watchlist.length === 0 ? (
-                <p style={{ color: '#aaa' }}>You haven't added any favorites yet.</p>
-            ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '15px', marginTop: '20px' }}>
-                    {watchlist.map(item => (
-                        <div key={item.id} style={{ backgroundColor: '#1a1a1a', padding: '10px', borderRadius: '8px' }}>
-                            <img 
-                                src={item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : 'https://via.placeholder.com/200x300'} 
-                                alt={item.title || item.name} 
-                                style={{ width: '100%', borderRadius: '4px' }}
-                            />
-                            <p style={{ fontSize: '0.9rem', marginTop: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {item.title || item.name}
-                            </p>
-                        </div>
-                    ))}
+            {/* Native Header */}
+            <div style={{ padding: '15px 20px', display: 'flex', alignItems: 'center', gap: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="search-back-btn" onClick={() => switchView('profile')} style={{ background: 'rgba(255,255,255,0.08)' }}>
+                    <i className="fa-solid fa-arrow-left"></i>
                 </div>
-            )}
+                <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '700', color: '#fff' }}>My Favorites</h2>
+            </div>
+
+            {/* Grid Content */}
+            <div style={{ padding: '20px' }}>
+                {watchlist.length === 0 ? (
+                    <p style={{ color: '#aaa', textAlign: 'center', marginTop: '40px' }}>You haven't added any favorites yet.</p>
+                ) : (
+                    <div className="explore-grid" style={{ padding: '0' }}>
+                        {watchlist.map(item => (
+                            <div key={item.id} className="movie-card fade-in" onClick={() => openDetail(item)}>
+                                <div className="card-poster">
+                                    <div className="rating-badge"><i className="fas fa-star"></i> {item.vote_average?.toFixed(1) || '0.0'}</div>
+                                    <img
+                                        src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/200x300'}
+                                        alt={item.title || item.name}
+                                        loading="lazy"
+                                        onError={(e) => e.target.src = 'https://via.placeholder.com/200x300'}
+                                    />
+                                </div>
+                                <div className="card-info" style={{ marginTop: '8px' }}>
+                                    <div className="card-title">{item.title || item.name}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

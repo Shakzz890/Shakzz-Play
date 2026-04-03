@@ -2,8 +2,9 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useGlobal } from '../context/GlobalContext';
 import { fetchData, IMG_URL, POSTER_URL, PLACEHOLDER_IMG, getDisplayTitle } from '../api/tmdb';
 import Top10Philippines from '../components/Top10Philippines';
-// Capacitor Browser for external links
 import { Browser } from '@capacitor/browser';
+// 🚀 IMPORT SPATIAL NAVIGATION
+import { useFocusable } from '@noriginmedia/norigin-spatial-navigation';
 
 // --- HELPER TO CHECK IF ITEM IS IN THE FUTURE ---
 const isItemUpcoming = (item) => {
@@ -14,37 +15,120 @@ const isItemUpcoming = (item) => {
     return releaseDate > today;
 };
 
-const MovieList = React.memo(({ items, isUpcoming }) => {
+// ==========================================================================
+// 🚀 SMART MOVIE CARD (ANDROID TV D-PAD READY)
+// ==========================================================================
+const SmartMovieCard = ({ item, isUpcoming, onOpen, category }) => {
+    // Register this specific card in the TV navigation grid
+    const { ref, focused, setFocus } = useFocusable({
+        onEnterPress: () => onOpen(item),
+        // Ensure unique ID even if movie appears in multiple rows
+        focusKey: `movie-${category}-${item.id}` 
+    });
+
+    return (
+        <div 
+            ref={ref} 
+            // Append your tv-focused glow class when highlighted by D-pad
+            className={`movie-card fade-in ${focused ? 'tv-focused' : ''}`} 
+            onClick={() => { setFocus(); onOpen(item); }}
+            onMouseEnter={() => setFocus()} // Good for mouse/air-mouse users
+        >
+            <div className="card-poster">
+                {isUpcoming ? <div className="coming-badge">COMING</div> : <div className="badge-overlay">HD</div>}
+                {!isUpcoming && <div className="rating-badge"><i className="fas fa-star"></i> {item.vote_average?.toFixed(1)}</div>}
+                <img 
+                    src={item.poster_path ? POSTER_URL + item.poster_path : PLACEHOLDER_IMG} 
+                    loading="lazy" 
+                    onError={(e) => e.target.src = PLACEHOLDER_IMG} 
+                    alt={getDisplayTitle(item)}
+                />
+            </div>
+            <div className="card-info">
+                <div className="card-title">{getDisplayTitle(item)}</div>
+                <div className="card-meta">
+                    <span>{(item.release_date || item.first_air_date || 'N/A').split('-')[0]}</span>
+                    <span className="dot-sep"></span>
+                    <span>{item.media_type === 'tv' || item.first_air_date ? 'Series' : 'Movie'}</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ==========================================================================
+// 🚀 SMART CONTINUE CARD (ANDROID TV D-PAD READY)
+// ==========================================================================
+const SmartContinueCard = ({ item, onPlay, onMenuClick, activeMenuId, onPin, onRemove }) => {
+    const { ref, focused, setFocus } = useFocusable({
+        onEnterPress: () => onPlay(item),
+        focusKey: `history-${item.id}`
+    });
+
+    return (
+        <div 
+            ref={ref}
+            className={`continue-card fade-in ${focused ? 'tv-focused' : ''}`} 
+            onClick={() => { setFocus(); onPlay(item); }}
+            onMouseEnter={() => setFocus()}
+        >
+            <div className="continue-image-wrapper">
+                <img 
+                    src={item.backdrop_path ? IMG_URL + item.backdrop_path : POSTER_URL + item.poster_path} 
+                    onError={(e) => e.target.src = PLACEHOLDER_IMG} 
+                    alt={item.title || "Continue Watching"}
+                />
+                <div className="continue-play-icon"><i className="fas fa-play"></i></div>
+                <div className="continue-ep-badge">{item.badge_label || 'Resume'}</div>
+                {item.pinned && <div className="pinned-badge visible"><i className="fas fa-thumbtack"></i></div>}
+                <div className="continue-progress-bg">
+                    <div className="continue-progress-fill" style={{ width: '0%' }}></div>
+                </div>
+            </div>
+            <div className="continue-info">
+                <div className="continue-title">{item.title}</div>
+                <div className="continue-menu-btn" onClick={(e) => onMenuClick(e, item.id)}>
+                    <i className="fas fa-ellipsis-vertical"></i>
+                </div>
+                {activeMenuId === item.id && (
+                    <div className="card-context-menu show">
+                        <div className="ctx-item" onClick={(e) => onPin(e, item)}>
+                            <i className="fas fa-thumbtack"></i> {item.pinned ? 'Unpin' : 'Pin'}
+                        </div>
+                        <div className="ctx-item delete" onClick={(e) => onRemove(e, item)}>
+                            <i className="fas fa-trash"></i> Remove
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// ==========================================================================
+// MOVIE LIST COMPONENT
+// ==========================================================================
+const MovieList = React.memo(({ items, isUpcoming, category }) => {
     const { openDetail } = useGlobal();
 
     return (
         <div className="list">
-            {items.slice(0, 12).map(item => (
-                <div key={item.id} className="movie-card focusable-element fade-in" onClick={() => openDetail(item)} tabIndex="0">
-                    <div className="card-poster">
-                        {isUpcoming ? <div className="coming-badge">COMING</div> : <div className="badge-overlay">HD</div>}
-                        {!isUpcoming && <div className="rating-badge"><i className="fas fa-star"></i> {item.vote_average?.toFixed(1)}</div>}
-                        <img 
-                            src={item.poster_path ? POSTER_URL + item.poster_path : PLACEHOLDER_IMG} 
-                            loading="lazy" 
-                            onError={(e) => e.target.src = PLACEHOLDER_IMG} 
-                            alt={getDisplayTitle(item)}
-                        />
-                    </div>
-                    <div className="card-info">
-                        <div className="card-title">{getDisplayTitle(item)}</div>
-                        <div className="card-meta">
-                            <span>{(item.release_date || item.first_air_date || 'N/A').split('-')[0]}</span>
-                            <span className="dot-sep"></span>
-                            <span>{item.media_type === 'tv' || item.first_air_date ? 'Series' : 'Movie'}</span>
-                        </div>
-                    </div>
-                </div>
+            {items.slice(0, 12).map((item, index) => (
+                <SmartMovieCard 
+                    key={`${item.id}-${index}`} 
+                    item={item} 
+                    isUpcoming={isUpcoming} 
+                    onOpen={openDetail}
+                    category={category} // Pass category down for unique ID
+                />
             ))}
         </div>
     );
 });
 
+// ==========================================================================
+// MAIN HOME COMPONENT
+// ==========================================================================
 const Home = () => {
     const { 
         openDetail, 
@@ -249,55 +333,33 @@ const Home = () => {
                     <h2><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Continue Watching <i className="fa-solid fa-clock-rotate-left"></i></h2>
                     <div className="list" id="continue-list">
                         {history.slice(0, 10).map(item => (
-                            <div key={item.id} className="continue-card fade-in" onClick={() => playHistoryItem(item)}>
-                                <div className="continue-image-wrapper">
-                                    <img 
-                                        src={item.backdrop_path ? IMG_URL + item.backdrop_path : POSTER_URL + item.poster_path} 
-                                        onError={(e) => e.target.src = PLACEHOLDER_IMG} 
-                                        alt={item.title || "Continue Watching"}
-                                    />
-                                    <div className="continue-play-icon"><i className="fas fa-play"></i></div>
-                                    <div className="continue-ep-badge">{item.badge_label || 'Resume'}</div>
-                                    {item.pinned && <div className="pinned-badge visible"><i className="fas fa-thumbtack"></i></div>}
-                                    <div className="continue-progress-bg">
-                                        <div className="continue-progress-fill" style={{ width: '0%' }}></div>
-                                    </div>
-                                </div>
-                                <div className="continue-info">
-                                    <div className="continue-title">{item.title}</div>
-                                    <div className="continue-menu-btn" onClick={(e) => handleMenuClick(e, item.id)}>
-                                        <i className="fas fa-ellipsis-vertical"></i>
-                                    </div>
-                                    {activeMenuId === item.id && (
-                                        <div className="card-context-menu show">
-                                            <div className="ctx-item" onClick={(e) => handlePin(e, item)}>
-                                                <i className="fas fa-thumbtack"></i> {item.pinned ? 'Unpin' : 'Pin'}
-                                            </div>
-                                            <div className="ctx-item delete" onClick={(e) => handleRemove(e, item)}>
-                                                <i className="fas fa-trash"></i> Remove
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                            <SmartContinueCard 
+                                key={item.id} 
+                                item={item} 
+                                onPlay={playHistoryItem}
+                                onMenuClick={handleMenuClick}
+                                activeMenuId={activeMenuId}
+                                onPin={handlePin}
+                                onRemove={handleRemove}
+                            />
                         ))}
                     </div>
                 </div>
             )}
 
-
             {/* 🚀 THE NEW GIANT TOP 10 ROW */}
             <Top10Philippines trendingMovies={lists.top_ph} />
-                        {/* CATEGORIES */}
-            <div className="row"><h2 onClick={() => openCat('trending', 'Latest Updates')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Latest Updates <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.trending} /></div>
-            <div className="row"><h2 onClick={() => openCat('top_ph', 'Top in the Philippines')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Top in the Philippines <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.top_ph} /></div>
-            <div className="row"><h2 onClick={() => openCat('kdrama', 'Top K-Drama')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Top K-Drama <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.kdrama} /></div>
-            <div className="row"><h2 onClick={() => openCat('cdrama', 'Top C-Drama')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Top C-Drama <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.cdrama} /></div>
-            <div className="row"><h2 onClick={() => openCat('filipino', 'Top Filipino Drama')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Top Filipino Drama <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.filipino} /></div>
-            <div className="row"><h2 onClick={() => openCat('movies', 'Trending Movies')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Trending Movies <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.movies} /></div>
-            <div className="row"><h2 onClick={() => openCat('tv', 'Trending TV Shows')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Trending TV Shows <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.tv} /></div>
-            <div className="row"><h2 onClick={() => openCat('anime', 'Trending Anime')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Trending Anime <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.anime} /></div>
-            <div className="row"><h2 onClick={() => openCat('upcoming', 'Upcoming Releases')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Upcoming <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.upcoming} isUpcoming={true} /></div>
+            
+            {/* CATEGORIES */}
+            <div className="row"><h2 onClick={() => openCat('trending', 'Latest Updates')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Latest Updates <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.trending} category="trending" /></div>
+            <div className="row"><h2 onClick={() => openCat('top_ph', 'Top in the Philippines')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Top in the Philippines <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.top_ph} category="top_ph" /></div>
+            <div className="row"><h2 onClick={() => openCat('kdrama', 'Top K-Drama')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Top K-Drama <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.kdrama} category="kdrama" /></div>
+            <div className="row"><h2 onClick={() => openCat('cdrama', 'Top C-Drama')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Top C-Drama <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.cdrama} category="cdrama" /></div>
+            <div className="row"><h2 onClick={() => openCat('filipino', 'Top Filipino Drama')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Top Filipino Drama <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.filipino} category="filipino" /></div>
+            <div className="row"><h2 onClick={() => openCat('movies', 'Trending Movies')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Trending Movies <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.movies} category="movies" /></div>
+            <div className="row"><h2 onClick={() => openCat('tv', 'Trending TV Shows')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Trending TV Shows <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.tv} category="tv" /></div>
+            <div className="row"><h2 onClick={() => openCat('anime', 'Trending Anime')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Trending Anime <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.anime} category="anime" /></div>
+            <div className="row"><h2 onClick={() => openCat('upcoming', 'Upcoming Releases')}><span className="section-indicator" style={{ background: 'var(--accent-color)' }}></span> Upcoming <i className="fa-solid fa-chevron-right"></i></h2><MovieList items={lists.upcoming} isUpcoming={true} category="upcoming" /></div>
         
             {/* FOOTER */}
             <footer className="footer">

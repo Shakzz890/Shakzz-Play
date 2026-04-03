@@ -1,24 +1,47 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useGlobal } from '../context/GlobalContext';
+import AvatarCropper from '../components/AvatarCropper';
 
 const Profile = () => {
-    // Added loginGithub and switchView
     const { user, loginGoogle, loginGithub, doLogout, showToast, switchView } = useGlobal();
     const fileInputRef = useRef(null);
+    
+    // State for the Image Cropper
+    const [imageToCrop, setImageToCrop] = useState(null);
+    const [previewAvatar, setPreviewAvatar] = useState(null); 
 
     // Triggers the hidden file input
     const handleEditPictureClick = () => {
         fileInputRef.current.click();
     };
 
-    // Handles the file selection
+    // 1. User picks a file
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
         
-        // TODO: Add Firebase Storage upload logic here
-        showToast("Picture selected! Ready for upload.", "success");
-        console.log("Selected file:", file.name);
+        // Read the file as a Data URL so the cropper can show it
+        const reader = new FileReader();
+        reader.onload = () => {
+            setImageToCrop(reader.result); // Open the cropper modal
+        };
+        reader.readAsDataURL(file);
+        
+        // Reset input so they can pick the same file again if they cancel
+        e.target.value = ''; 
+    };
+
+   // 2. User hits "Save" in the Cropper
+    const handleCroppedImage = async (croppedData) => {
+        setImageToCrop(null); // Close modal
+        setPreviewAvatar(croppedData.url); // Show the new cropped face instantly!
+        showToast("Saved!", "success");
+        
+        // TODO: FIREBASE UPLOAD LOGIC
+        // const storageRef = ref(storage, `avatars/${user.uid}.jpg`);
+        // await uploadBytes(storageRef, croppedData.blob);
+        // const downloadUrl = await getDownloadURL(storageRef);
+        // await updateProfile(user, { photoURL: downloadUrl });
     };
 
     // ==========================================
@@ -69,17 +92,27 @@ const Profile = () => {
     // ==========================================
     return (
         <div id="profile-view">
+            
+            {/* Render the Cropper popup if an image is selected */}
+            {imageToCrop && (
+                <AvatarCropper 
+                    imageSrc={imageToCrop} 
+                    onCancel={() => setImageToCrop(null)} 
+                    onSave={handleCroppedImage} 
+                />
+            )}
+
             <div className="profile-header-centered">
                 <div className="avatar-edit-wrapper">
                     <img 
-                        src={user?.photoURL || "https://ui-avatars.com/api/?name=" + (user?.displayName || "User") + "&background=a855f7&color=fff"} 
+                        // Show the cropped preview if it exists, otherwise show user's actual photo
+                        src={previewAvatar || user?.photoURL || "https://ui-avatars.com/api/?name=" + (user?.displayName || "User") + "&background=a855f7&color=fff"} 
                         alt="Profile" 
                         className="profile-avatar-large"
                     />
                     <div className="avatar-edit-btn" onClick={handleEditPictureClick}>
                         <i className="fa-solid fa-camera"></i>
                     </div>
-                    {/* Hidden File Input */}
                     <input 
                         type="file" 
                         ref={fileInputRef} 
@@ -137,6 +170,7 @@ const Profile = () => {
                     </div>
                 </div>
             </div>
+            
         </div>
     );
 };

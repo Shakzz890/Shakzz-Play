@@ -6057,3 +6057,58 @@ body:has(.search-modal-v2.active) {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+
+/* ==========================================================================
+   ANDROID TV & LARGE SCREEN MASTER LAYOUT FIXES
+   ========================================================================== */
+
+/* 1. Fix the "Cropped on Left" / Overscan issue */
+.tv-mode .app-container,
+.desktop-mode .app-container {
+    padding-left: 4% !important;  /* Protects against physical TV bezels */
+    padding-right: 4% !important;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+/* 2. Center the main content perfectly */
+.tv-mode .main-content,
+.desktop-mode .main-content {
+    max-width: 1600px;
+    margin: 0 auto; /* This strictly centers the app on massive screens */
+}
+
+/* 3. Fix the Slider cropping off screen */
+.tv-mode .slider-viewport,
+.desktop-mode .slider-viewport {
+    border-radius: 16px;
+    margin-top: 20px;
+    width: 100%;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+
+/* 4. Disable edge-to-edge hacks that break on TV */
+.tv-mode .recommendations-section,
+.desktop-mode .recommendations-section {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 16px;
+}
+
+/* 5. Ensure horizontal lists have breathing room so the focus glow isn't cut off */
+.tv-mode .list,
+.desktop-mode .list {
+    padding-left: 10px;
+    padding-top: 10px;
+    padding-bottom: 25px; /* Room for the hover/focus jump */
+}
+
+/* 6. TV Focus Glow (Overriding your existing one to be much more visible on a TV) */
+.tv-focused {
+    outline: none !important;
+    transform: scale(1.08) !important;
+    box-shadow: 0 0 0 4px var(--accent-color), 0 10px 25px rgba(0,0,0,0.8) !important;
+    z-index: 100;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
